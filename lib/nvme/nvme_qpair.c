@@ -541,7 +541,13 @@ nvme_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_request *re
 		}
 	}
 
-	return nvme_transport_qpair_submit_request(qpair, req);
+	// pynvme: add to cmdog after submit the command successfully
+	extern void cmdlog_add_cmd(uint16_t qid, struct nvme_request * req);
+	rc = nvme_transport_qpair_submit_request(qpair, req);
+	if (rc == 0) {
+		cmdlog_add_cmd(qpair->id, req);
+	}
+	return rc;
 }
 
 static void
