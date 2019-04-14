@@ -1454,7 +1454,7 @@ nvme_pcie_ctrlr_cmd_create_io_cq(struct spdk_nvme_ctrlr *ctrlr,
 	 * 0x2 = interrupts enabled
 	 * 0x1 = physically contiguous
 	 */
-	cmd->cdw11 = 0x1;
+	cmd->cdw11 = 0x3 | (io_que->id<<16);  // pynvme enables msix
 	cmd->dptr.prp.prp1 = pqpair->cpl_bus_addr;
 
 	return nvme_ctrlr_submit_admin_request(ctrlr, req);
