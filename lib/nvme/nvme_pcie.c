@@ -2069,6 +2069,13 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 		nvme_robust_mutex_lock(&ctrlr->ctrlr_lock);
 	}
 
+	if (spdk_unlikely(ctrlr->timeout_enabled)) {
+		/*
+		 * User registered for timeout callback
+		 */
+		nvme_pcie_qpair_check_timeout(qpair);
+	}
+
 	if (max_completions == 0 || max_completions > pqpair->max_completions_cap) {
 		/*
 		 * max_completions == 0 means unlimited, but complete at most
@@ -2122,13 +2129,6 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 			spdk_mmio_write_4(pqpair->cq_hdbl, pqpair->cq_head);
 			g_thread_mmio_ctrlr = NULL;
 		}
-	}
-
-	if (spdk_unlikely(ctrlr->timeout_enabled)) {
-		/*
-		 * User registered for timeout callback
-		 */
-		nvme_pcie_qpair_check_timeout(qpair);
 	}
 
 	/* Before returning, complete any pending admin request. */
