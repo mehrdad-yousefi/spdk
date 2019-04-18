@@ -498,10 +498,4 @@ rm -f mk/config.mk.bak
 
 echo "done."
 
-if [[ "$OSTYPE" == "freebsd"* ]]; then
-	echo "Type 'gmake' to build."
-else
-	echo "Type 'make' to build."
-fi
-
 exit 0

@@ -306,6 +306,12 @@ nvme_qpair_print_completion(struct spdk_nvme_qpair *qpair,
 		       cpl->sqhd, cpl->status.p, cpl->status.m, cpl->status.dnr);
 }
 
+extern const char* nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
+const char* nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl)
+{
+  return get_status_string(cpl->status.sct, cpl->status.sc);
+}
+
 bool
 nvme_completion_is_retry(const struct spdk_nvme_cpl *cpl)
 {

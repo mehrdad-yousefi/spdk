@@ -2142,3 +2142,21 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 
 	return num_completions;
 }
+
+extern uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair* qpair);
+uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair* qpair)
+{
+  uint32_t count = 0;
+ 	struct nvme_pcie_qpair* pqpair = nvme_pcie_qpair(qpair);
+  struct nvme_tracker* tr;
+
+  assert(qpair != NULL);
+  
+  TAILQ_FOREACH(tr, &pqpair->outstanding_tr, tq_list)
+  {
+    count ++;
+  }
+
+  return count;
+}
+
