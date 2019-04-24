@@ -1012,4 +1012,12 @@ _is_page_aligned(uint64_t address, uint64_t page_size)
 	return (address & (page_size - 1)) == 0;
 }
 
+// spdk new API provided to pynvme
+extern uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair);
+extern const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
+
+// pynvme driver API called by SPDK
+extern void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req);
+extern void cmdlog_cmd_cpl(void *cb_ctx, struct spdk_nvme_cpl *cpl);
+
 #endif /* __NVME_INTERNAL_H__ */

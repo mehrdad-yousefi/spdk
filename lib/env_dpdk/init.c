@@ -420,3 +420,9 @@ spdk_env_init(const struct spdk_env_opts *opts)
 
 	return spdk_env_dpdk_post_init();
 }
+
+int
+spdk_env_cleanup(void)
+{
+  return rte_eal_cleanup();
+}

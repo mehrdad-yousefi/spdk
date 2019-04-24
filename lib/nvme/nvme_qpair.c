@@ -306,10 +306,9 @@ nvme_qpair_print_completion(struct spdk_nvme_qpair *qpair,
 		       cpl->sqhd, cpl->status.p, cpl->status.m, cpl->status.dnr);
 }
 
-extern const char* nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
-const char* nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl)
+const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl)
 {
-  return get_status_string(cpl->status.sct, cpl->status.sc);
+	return get_status_string(cpl->status.sct, cpl->status.sc);
 }
 
 bool
@@ -548,12 +547,7 @@ nvme_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_request *re
 	}
 
 	// pynvme: add to cmdog after submit the command successfully
-	extern void cmdlog_add_cmd(uint16_t qid, struct nvme_request * req);
-	rc = nvme_transport_qpair_submit_request(qpair, req);
-	if (rc == 0) {
-		cmdlog_add_cmd(qpair->id, req);
-	}
-	return rc;
+	return nvme_transport_qpair_submit_request(qpair, req);
 }
 
 static void
