@@ -150,7 +150,7 @@ void spdk_env_opts_init(struct spdk_env_opts *opts);
  * \return 0 on success, or negative errno on failure.
  */
 int spdk_env_init(const struct spdk_env_opts *opts);
-  
+
 int spdk_env_cleanup(void);
 
 /**

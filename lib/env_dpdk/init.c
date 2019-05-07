@@ -424,5 +424,5 @@ spdk_env_init(const struct spdk_env_opts *opts)
 int
 spdk_env_cleanup(void)
 {
-  return rte_eal_cleanup();
+	return rte_eal_cleanup();
 }
