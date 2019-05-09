@@ -38,7 +38,7 @@ include $(SPDK_ROOT_DIR)/mk/spdk.common.mk
 
 CRYPTO_ENABLED=n
 
-DPDK_OPTS =
+DPDK_OPTS = CONFIG_RTE_EAL_VFIO=n
 DPDK_CFLAGS =
 
 ifeq ($(CONFIG_CRYPTO),y)

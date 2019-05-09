@@ -989,7 +989,7 @@ nvme_pcie_qpair_construct(struct spdk_nvme_qpair *qpair)
 	pqpair->max_completions_cap = spdk_min(pqpair->max_completions_cap, NVME_MAX_COMPLETIONS);
 	num_trackers = pqpair->num_entries - pqpair->max_completions_cap;
 
-	SPDK_INFOLOG(SPDK_LOG_NVME, "max_completions_cap = %" PRIu16 " num_trackers = %" PRIu16 "\n",
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "max_completions_cap = %" PRIu16 " num_trackers = %" PRIu16 "\n",
 		     pqpair->max_completions_cap, num_trackers);
 
 	assert(num_trackers != 0);
