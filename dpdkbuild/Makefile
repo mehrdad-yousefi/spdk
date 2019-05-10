@@ -38,7 +38,7 @@ include $(SPDK_ROOT_DIR)/mk/spdk.common.mk
 
 CRYPTO_ENABLED=n
 
-DPDK_OPTS = CONFIG_RTE_EAL_VFIO=n
+DPDK_OPTS =
 DPDK_CFLAGS =
 
 ifeq ($(CONFIG_CRYPTO),y)
@@ -107,8 +107,12 @@ endif
 # Allow users to specify EXTRA_DPDK_CFLAGS if they want to build DPDK using unsupported compiler versions
 DPDK_CFLAGS += $(EXTRA_DPDK_CFLAGS)
 
+# disable vfio, use UIO only
 $(SPDK_ROOT_DIR)/dpdk/build:
+	cp $(SPDK_ROOT_DIR)/dpdk/config/defconfig_$(DPDK_CONFIG) $(SPDK_ROOT_DIR)/dpdk/config/defconfig_$(DPDK_CONFIG).orig
+	echo "CONFIG_RTE_EAL_VFIO=n" >> $(SPDK_ROOT_DIR)/dpdk/config/defconfig_$(DPDK_CONFIG)
 	$(Q)$(MAKE) -C $(SPDK_ROOT_DIR)/dpdk config T=$(DPDK_CONFIG) $(DPDK_OPTS)
+	mv $(SPDK_ROOT_DIR)/dpdk/config/defconfig_$(DPDK_CONFIG).orig $(SPDK_ROOT_DIR)/dpdk/config/defconfig_$(DPDK_CONFIG)
 
 all: $(SPDK_ROOT_DIR)/dpdk/build
 	$(Q)$(MAKE) -C $(SPDK_ROOT_DIR)/dpdk/build EXTRA_CFLAGS="$(DPDK_CFLAGS)" MAKEFLAGS="T=$(DPDK_CONFIG) -j$(NPROC)" $(DPDK_OPTS)
