@@ -249,6 +249,7 @@ struct nvme_request {
 
 	spdk_nvme_cmd_cb		cb_fn;
 	void				*cb_arg;
+	void        *cmdlog_entry;
 	STAILQ_ENTRY(nvme_request)	stailq;
 
 	struct spdk_nvme_qpair		*qpair;
@@ -1018,6 +1019,6 @@ extern const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
 
 // pynvme driver API called by SPDK
 extern void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req);
-extern void cmdlog_cmd_cpl(void *cb_ctx, struct spdk_nvme_cpl *cpl);
+extern void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl);
 
 #endif /* __NVME_INTERNAL_H__ */
