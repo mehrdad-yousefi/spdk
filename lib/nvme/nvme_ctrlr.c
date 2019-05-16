@@ -1939,8 +1939,9 @@ nvme_ctrlr_process_init(struct spdk_nvme_ctrlr *ctrlr)
 		 *
 		 * TODO: Figure out what is actually going wrong.
 		 */
-		SPDK_DEBUGLOG(SPDK_LOG_NVME, "Adding 2 second delay before initializing the controller\n");
-		ctrlr->sleep_timeout_tsc = spdk_get_ticks() + (2000 * spdk_get_ticks_hz() / 1000);
+    // pynvme reduce the delay to 2ms, to catch the potential device issues
+		SPDK_DEBUGLOG(SPDK_LOG_NVME, "Adding 0.002 second delay before initializing the controller\n");
+		ctrlr->sleep_timeout_tsc = spdk_get_ticks() + (2 * spdk_get_ticks_hz() / 1000);
 		break;
 
 	case NVME_CTRLR_STATE_INIT:
