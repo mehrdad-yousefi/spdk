@@ -1257,7 +1257,7 @@ nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_trac
 				nvme_pcie_qpair_insert_pending_admin_request(qpair, req, cpl);
 			} else {
 				// pynvme: handle cmdlog callback if it is still there
-				cmdlog_cmd_cpl(req, &req->cpl);
+				cmdlog_cmd_cpl(req, cpl);
 				nvme_complete_request(req, cpl);
 			}
 		}
