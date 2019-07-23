@@ -364,6 +364,9 @@ struct spdk_nvme_qpair {
 	struct spdk_nvme_ctrlr_process	*active_proc;
 
 	void				*req_buf;
+
+  // pynvme
+  void* pynvme_cmdlog;
 };
 
 struct spdk_nvme_ns {
@@ -386,6 +389,10 @@ struct spdk_nvme_ns {
 
 	/* Namespace Identification Descriptor List (CNS = 03h) */
 	uint8_t				id_desc_list[4096];
+
+  // pynvme: crc table
+	uint32_t* crc_table;
+	uint64_t table_size;
 };
 
 /**
@@ -586,6 +593,15 @@ struct spdk_nvme_ctrlr_process {
 	uint64_t			timeout_ticks;
 };
 
+struct msix_ctrl {
+  uint32_t bir;
+  uint32_t bir_offset;
+  uint64_t vir_addr;
+  uint64_t phys_addr;
+  uint32_t size;
+  void* msix_table;
+};
+
 /*
  * One of these per allocated PCI device.
  */
@@ -691,6 +707,9 @@ struct spdk_nvme_ctrlr {
 
 	STAILQ_HEAD(, nvme_request)	queued_aborts;
 	uint32_t			outstanding_aborts;
+
+  // pynvme
+  struct msix_ctrl* pynvme_intc_ctrl;
 };
 
 struct nvme_driver {
