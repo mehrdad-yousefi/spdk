@@ -614,7 +614,6 @@ nvme_tcp_qpair_capsule_cmd_send(struct nvme_tcp_qpair *tqpair,
 end:
 	capsule_cmd->common.plen = plen;
 	return nvme_tcp_qpair_write_pdu(tqpair, pdu, nvme_tcp_qpair_cmd_send_complete, NULL);
-
 }
 
 int
@@ -639,6 +638,9 @@ nvme_tcp_qpair_submit_request(struct spdk_nvme_qpair *qpair,
 		nvme_tcp_req_put(tqpair, tcp_req);
 		return -1;
 	}
+
+	// pynvme: add new cmd into cmdlog
+	cmdlog_add_cmd(qpair, req);
 
 	return nvme_tcp_qpair_capsule_cmd_send(tqpair, tcp_req);
 }
@@ -1771,6 +1773,21 @@ int
 nvme_tcp_ctrlr_free_cmb_io_buffer(struct spdk_nvme_ctrlr *ctrlr, void *buf, size_t size)
 {
 	return 0;
+}
+
+uint32_t nvme_tcp_qpair_outstanding_count(struct spdk_nvme_qpair *qpair)
+{
+	uint32_t count = 0;
+	struct nvme_tcp_qpair *tqpair = nvme_tcp_qpair(qpair);
+	struct nvme_tcp_req *req;
+
+	assert(qpair != NULL);
+
+	TAILQ_FOREACH(req, &tqpair->outstanding_reqs, link) {
+		count ++;
+	}
+
+	return count;
 }
 
 void

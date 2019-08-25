@@ -756,10 +756,4 @@ rm -f $rootdir/mk/cc.flags.mk
 [ -n "$DESTDIR" ] && echo "DESTDIR?=$DESTDIR" >> $rootdir/mk/cc.flags.mk
 echo "done."
 
-if [[ "$OSTYPE" == "freebsd"* ]]; then
-	echo "Type 'gmake' to build."
-else
-	echo "Type 'make' to build."
-fi
-
 exit 0

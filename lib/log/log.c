@@ -112,9 +112,12 @@ void
 spdk_log(enum spdk_log_level level, const char *file, const int line, const char *func,
 	 const char *format, ...)
 {
-	int severity = LOG_INFO;
 	char buf[MAX_TMPBUF];
 	va_list ap;
+
+	if (level > g_spdk_log_print_level && level > g_spdk_log_level) {
+		return;
+	}
 
 	if (g_log) {
 		va_start(ap, format);
@@ -123,7 +126,29 @@ spdk_log(enum spdk_log_level level, const char *file, const int line, const char
 		return;
 	}
 
-	if (level > g_spdk_log_print_level && level > g_spdk_log_level) {
+	va_start(ap, format);
+	vsnprintf(buf, sizeof(buf), format, ap);
+	va_end(ap);
+
+	if (level <= g_spdk_log_print_level) {
+		char tmbuf[128];
+		struct tm *time;
+		struct timeval now;
+
+		// pynvme: print accurate time for log
+		gettimeofday(&now, NULL);
+		time = localtime(&now.tv_sec);
+		strftime(tmbuf, sizeof(tmbuf), "[%Y-%m-%d %H:%M:%S.", time);
+		fprintf(stderr, "%s%06ld] %s %s(%d) %s: %s",
+			tmbuf, now.tv_usec, spdk_level_names[level],
+			file, line, func, buf);
+		spdk_log_unwind_stack(stderr, level);
+	}
+
+#if 0 // pynvme does not use sys log
+	int severity = LOG_INFO;
+	if (g_log) {
+		g_log(level, file, line, func, format);
 		return;
 	}
 
@@ -145,20 +170,10 @@ spdk_log(enum spdk_log_level level, const char *file, const int line, const char
 		return;
 	}
 
-	va_start(ap, format);
-
-	vsnprintf(buf, sizeof(buf), format, ap);
-
-	if (level <= g_spdk_log_print_level) {
-		fprintf(stderr, "%s:%4d:%s: *%s*: %s", file, line, func, spdk_level_names[level], buf);
-		spdk_log_unwind_stack(stderr, level);
-	}
-
 	if (level <= g_spdk_log_level) {
 		syslog(severity, "%s:%4d:%s: *%s*: %s", file, line, func, spdk_level_names[level], buf);
 	}
-
-	va_end(ap);
+#endif
 }
 
 static void
@@ -169,7 +184,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 	size_t total;
 	unsigned int idx;
 
-	fprintf(fp, "%s\n", label);
+	//fprintf(fp, "%s\n", label);
 
 	memset(buf16, 0, sizeof buf16);
 	total = 0;
@@ -201,7 +216,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 		total += snprintf(tmpbuf + total, sizeof tmpbuf - total, "   ");
 		buf16[idx % 16] = ' ';
 	}
-	snprintf(tmpbuf + total, sizeof tmpbuf - total, "  %s", buf16);
+	snprintf(tmpbuf + total, sizeof tmpbuf - total, " %s", buf16);
 	fprintf(fp, "%s\n", tmpbuf);
 	fflush(fp);
 }

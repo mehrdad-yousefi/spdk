@@ -112,7 +112,6 @@ static void
 nvme_admin_qpair_print_command(struct spdk_nvme_qpair *qpair,
 			       struct spdk_nvme_cmd *cmd)
 {
-
 	SPDK_NOTICELOG("%s (%02x) sqid:%d cid:%d nsid:%x "
 		       "cdw10:%08x cdw11:%08x\n",
 		       nvme_get_string(admin_opcode, cmd->opc), cmd->opc, qpair->id, cmd->cid,
@@ -305,6 +304,11 @@ spdk_nvme_qpair_print_completion(struct spdk_nvme_qpair *qpair,
 		       spdk_nvme_cpl_get_status_string(&cpl->status),
 		       cpl->status.sct, cpl->status.sc, cpl->sqid, cpl->cid, cpl->cdw0,
 		       cpl->sqhd, cpl->status.p, cpl->status.m, cpl->status.dnr);
+}
+
+const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl)
+{
+	return spdk_nvme_cpl_get_status_string(&cpl->status);
 }
 
 bool
@@ -551,6 +555,9 @@ nvme_qpair_init(struct spdk_nvme_qpair *qpair, uint16_t id,
 		STAILQ_INSERT_HEAD(&qpair->free_req, req, stailq);
 	}
 
+	// pynvme: create cmdlog resources
+	cmdlog_init(qpair);
+
 	return 0;
 }
 
@@ -581,6 +588,9 @@ nvme_qpair_deinit(struct spdk_nvme_qpair *qpair)
 	}
 
 	spdk_free(qpair->req_buf);
+
+	// pynvme: clear cmdlog resources
+	cmdlog_free(qpair);
 }
 
 static inline int

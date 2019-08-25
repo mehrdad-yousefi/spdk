@@ -2092,7 +2092,15 @@ nvme_ctrlr_free_processes(struct spdk_nvme_ctrlr *ctrlr)
 	TAILQ_FOREACH_SAFE(active_proc, &ctrlr->active_procs, tailq, tmp) {
 		TAILQ_REMOVE(&ctrlr->active_procs, active_proc, tailq);
 
-		assert(STAILQ_EMPTY(&active_proc->active_reqs));
+		// pynvme: print more debug information
+		if (!STAILQ_EMPTY(&active_proc->active_reqs)) {
+			struct nvme_request	*req, *tmp_req;
+			STAILQ_FOREACH_SAFE(req, &active_proc->active_reqs, stailq, tmp_req) {
+				spdk_nvme_qpair_print_command(req->qpair, &req->cmd);
+				spdk_nvme_qpair_print_completion(req->qpair, &req->cpl);
+			}
+			assert(false);
+		}
 
 		spdk_free(active_proc);
 	}

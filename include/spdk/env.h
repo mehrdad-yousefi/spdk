@@ -165,6 +165,8 @@ void spdk_env_opts_init(struct spdk_env_opts *opts);
  */
 int spdk_env_init(const struct spdk_env_opts *opts);
 
+int spdk_env_cleanup(void);
+
 /**
  * Release any resources of the environment library that were alllocated with
  * spdk_env_init(). After this call, no SPDK env function calls may be made.
