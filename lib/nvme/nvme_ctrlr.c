@@ -1864,7 +1864,15 @@ nvme_ctrlr_free_processes(struct spdk_nvme_ctrlr *ctrlr)
 	TAILQ_FOREACH_SAFE(active_proc, &ctrlr->active_procs, tailq, tmp) {
 		TAILQ_REMOVE(&ctrlr->active_procs, active_proc, tailq);
 
-		assert(STAILQ_EMPTY(&active_proc->active_reqs));
+		// pynvme: print more debug information
+		if (!STAILQ_EMPTY(&active_proc->active_reqs)) {
+			struct nvme_request	*req, *tmp_req;
+			STAILQ_FOREACH_SAFE(req, &active_proc->active_reqs, stailq, tmp_req) {
+				spdk_nvme_qpair_print_command(req->qpair, &req->cmd);
+				spdk_nvme_qpair_print_completion(req->qpair, &req->cpl);
+			}
+			assert(false);
+		}
 
 		spdk_free(active_proc);
 	}
@@ -2042,8 +2050,9 @@ nvme_ctrlr_process_init(struct spdk_nvme_ctrlr *ctrlr)
 		 *
 		 * TODO: Figure out what is actually going wrong.
 		 */
-		SPDK_DEBUGLOG(SPDK_LOG_NVME, "Adding 2 second delay before initializing the controller\n");
-		ctrlr->sleep_timeout_tsc = spdk_get_ticks() + (2000 * spdk_get_ticks_hz() / 1000);
+
+		// pynvme: removes the delay to catch the potential device issues
+		ctrlr->sleep_timeout_tsc = spdk_get_ticks(); // + (2 * spdk_get_ticks_hz() / 1000);
 		break;
 
 	case NVME_CTRLR_STATE_INIT:
