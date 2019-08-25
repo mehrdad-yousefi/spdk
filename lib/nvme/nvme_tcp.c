@@ -51,6 +51,11 @@
 
 #include "spdk_internal/nvme_tcp.h"
 
+
+// pynvme function
+extern void cmdlog_init(struct spdk_nvme_qpair *q);
+extern void cmdlog_free(struct spdk_nvme_qpair *q);
+
 #define NVME_TCP_RW_BUFFER_SIZE 131072
 
 #define NVME_TCP_HPDA_DEFAULT			0
@@ -346,6 +351,9 @@ nvme_tcp_ctrlr_destruct(struct spdk_nvme_ctrlr *ctrlr)
 
 	if (ctrlr->adminq) {
 		nvme_tcp_qpair_destroy(ctrlr->adminq);
+
+    // pynvme
+    cmdlog_free(ctrlr->adminq);
 	}
 
 	nvme_ctrlr_destruct_finish(ctrlr);
@@ -616,6 +624,10 @@ nvme_tcp_req_init(struct nvme_tcp_qpair *tqpair, struct nvme_request *req,
 static void
 nvme_tcp_qpair_cmd_send_complete(void *cb_arg)
 {
+	struct nvme_request *req = cb_arg;
+
+	// pynvme logs every cmd
+	cmdlog_add_cmd(req->qpair, req);
 }
 
 static int
@@ -672,8 +684,7 @@ nvme_tcp_qpair_capsule_cmd_send(struct nvme_tcp_qpair *tqpair,
 				  0, tcp_req->req->payload_size);
 end:
 	capsule_cmd->common.plen = plen;
-	return nvme_tcp_qpair_write_pdu(tqpair, pdu, nvme_tcp_qpair_cmd_send_complete, NULL);
-
+	return nvme_tcp_qpair_write_pdu(tqpair, pdu, nvme_tcp_qpair_cmd_send_complete, tcp_req->req);
 }
 
 int
@@ -722,6 +733,9 @@ static void
 nvme_tcp_req_complete(struct nvme_request *req,
 		      struct spdk_nvme_cpl *rsp)
 {
+	// pynvme: handle cmdlog callback if it is still there
+	cmdlog_cmd_cpl(req, &req->cpl);
+
 	nvme_complete_request(req->cb_fn, req->cb_arg, req->qpair, req, rsp);
 	nvme_free_request(req);
 }
@@ -1640,8 +1654,9 @@ nvme_tcp_qpair_icreq_send(struct nvme_tcp_qpair *tqpair)
 }
 
 static int
-nvme_tcp_qpair_connect(struct nvme_tcp_qpair *tqpair)
+nvme_tcp_qpair_connect(struct spdk_nvme_qpair *qpair)
 {
+	struct nvme_tcp_qpair *tqpair = nvme_tcp_qpair(qpair);
 	struct sockaddr_storage dst_addr;
 	struct sockaddr_storage src_addr;
 	int rc;
@@ -1720,7 +1735,7 @@ nvme_tcp_qpair_connect(struct nvme_tcp_qpair *tqpair)
 int
 nvme_tcp_ctrlr_connect_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_qpair *qpair)
 {
-	return nvme_tcp_qpair_connect(nvme_tcp_qpair(qpair));
+	return nvme_tcp_qpair_connect(qpair);
 }
 
 void
@@ -1760,12 +1775,6 @@ nvme_tcp_ctrlr_create_qpair(struct spdk_nvme_ctrlr *ctrlr,
 		return NULL;
 	}
 
-	rc = nvme_tcp_qpair_connect(tqpair);
-	if (rc < 0) {
-		nvme_tcp_qpair_destroy(qpair);
-		return NULL;
-	}
-
 	return qpair;
 }
 
@@ -1773,8 +1782,27 @@ struct spdk_nvme_qpair *
 nvme_tcp_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, uint16_t qid,
 			       const struct spdk_nvme_io_qpair_opts *opts)
 {
-	return nvme_tcp_ctrlr_create_qpair(ctrlr, qid, opts->io_queue_size, opts->qprio,
-					   opts->io_queue_requests);
+	struct spdk_nvme_qpair *qpair;
+	int rc;
+
+	qpair = nvme_tcp_ctrlr_create_qpair(ctrlr, qid, opts->io_queue_size, opts->qprio,
+					    opts->io_queue_requests);
+	if (qpair == NULL) {
+		SPDK_ERRLOG("failed to create IO qpair\n");
+		return NULL;
+	}
+
+	// pynvme: create qpair's cmdlog before using the qpair
+	cmdlog_init(qpair);
+  
+	rc = nvme_tcp_qpair_connect(qpair);
+	if (rc < 0) {
+		cmdlog_free(qpair);
+		nvme_tcp_qpair_destroy(qpair);
+		return NULL;
+	}
+
+	return qpair;
 }
 
 struct spdk_nvme_ctrlr *nvme_tcp_ctrlr_construct(const struct spdk_nvme_transport_id *trid,
@@ -1807,6 +1835,15 @@ struct spdk_nvme_ctrlr *nvme_tcp_ctrlr_construct(const struct spdk_nvme_transpor
 	if (!tctrlr->ctrlr.adminq) {
 		SPDK_ERRLOG("failed to create admin qpair\n");
 		nvme_tcp_ctrlr_destruct(&tctrlr->ctrlr);
+		return NULL;
+	}
+
+	// pynvme: init admin cmd log
+	cmdlog_init(tctrlr->ctrlr.adminq);
+
+	rc = nvme_tcp_qpair_connect(tctrlr->ctrlr.adminq);
+	if (rc < 0) {
+		nvme_tcp_qpair_destroy(tctrlr->ctrlr.adminq);
 		return NULL;
 	}
 
@@ -1868,6 +1905,21 @@ int
 nvme_tcp_ctrlr_free_cmb_io_buffer(struct spdk_nvme_ctrlr *ctrlr, void *buf, size_t size)
 {
 	return 0;
+}
+
+uint32_t nvme_tcp_qpair_outstanding_count(struct spdk_nvme_qpair *qpair)
+{
+	uint32_t count = 0;
+	struct nvme_tcp_qpair *tqpair = nvme_tcp_qpair(qpair);
+	struct nvme_tcp_req *req;
+
+	assert(qpair != NULL);
+
+	TAILQ_FOREACH(req, &tqpair->outstanding_reqs, link) {
+		count ++;
+	}
+
+	return count;
 }
 
 void

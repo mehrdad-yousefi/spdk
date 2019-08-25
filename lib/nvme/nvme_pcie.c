@@ -361,7 +361,9 @@ nvme_pcie_ctrlr_set_reg_4(struct spdk_nvme_ctrlr *ctrlr, uint32_t offset, uint32
 {
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 
-	assert(offset <= sizeof(struct spdk_nvme_registers) - 4);
+	//may access beyond registers in BAR memory
+	//assert(offset <= sizeof(struct spdk_nvme_registers) - 4);
+
 	g_thread_mmio_ctrlr = pctrlr;
 	spdk_mmio_write_4(nvme_pcie_reg_addr(ctrlr, offset), value);
 	g_thread_mmio_ctrlr = NULL;
@@ -1023,8 +1025,8 @@ nvme_pcie_qpair_construct(struct spdk_nvme_qpair *qpair,
 	pqpair->max_completions_cap = spdk_min(pqpair->max_completions_cap, NVME_MAX_COMPLETIONS);
 	num_trackers = pqpair->num_entries - pqpair->max_completions_cap;
 
-	SPDK_INFOLOG(SPDK_LOG_NVME, "max_completions_cap = %" PRIu16 " num_trackers = %" PRIu16 "\n",
-		     pqpair->max_completions_cap, num_trackers);
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "max_completions_cap = %" PRIu16 " num_trackers = %" PRIu16 "\n",
+		      pqpair->max_completions_cap, num_trackers);
 
 	assert(num_trackers != 0);
 
@@ -1201,6 +1203,9 @@ nvme_pcie_qpair_complete_pending_admin_request(struct spdk_nvme_qpair *qpair)
 
 		assert(req->pid == pid);
 
+		// pynvme: handle cmdlog callback if it is still there
+		cmdlog_cmd_cpl(req, &req->cpl);
+
 		nvme_complete_request(req->cb_fn, req->cb_arg, qpair, req, &req->cpl);
 		nvme_free_request(req);
 	}
@@ -1334,6 +1339,9 @@ nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_trac
 			req_from_current_proc = false;
 			nvme_pcie_qpair_insert_pending_admin_request(qpair, req, cpl);
 		} else {
+			// pynvme: handle cmdlog callback if it is still there
+			cmdlog_cmd_cpl(req, cpl);
+
 			nvme_complete_request(tr->cb_fn, tr->cb_arg, qpair, req, cpl);
 		}
 
@@ -1487,7 +1495,7 @@ nvme_pcie_ctrlr_cmd_create_io_cq(struct spdk_nvme_ctrlr *ctrlr,
 	 * 0x2 = interrupts enabled
 	 * 0x1 = physically contiguous
 	 */
-	cmd->cdw11 = 0x1;
+	cmd->cdw11 = 0x3 | (io_que->id << 16); // pynvme enables msix
 	cmd->dptr.prp.prp1 = pqpair->cpl_bus_addr;
 
 	return nvme_ctrlr_submit_admin_request(ctrlr, req);
@@ -2032,6 +2040,9 @@ nvme_pcie_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_reques
 
 	nvme_pcie_qpair_submit_tracker(qpair, tr);
 
+	// pynvme logs every cmd
+	cmdlog_add_cmd(qpair, req);
+
 exit:
 	if (spdk_unlikely(nvme_qpair_is_admin_queue(qpair))) {
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
@@ -2093,6 +2104,13 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 
 	if (spdk_unlikely(nvme_qpair_is_admin_queue(qpair))) {
 		nvme_robust_mutex_lock(&ctrlr->ctrlr_lock);
+	}
+
+	if (spdk_unlikely(ctrlr->timeout_enabled)) {
+		/*
+		 * User registered for timeout callback
+		 */
+		nvme_pcie_qpair_check_timeout(qpair);
 	}
 
 	if (max_completions == 0 || max_completions > pqpair->max_completions_cap) {
@@ -2171,13 +2189,6 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 		}
 	}
 
-	if (spdk_unlikely(ctrlr->timeout_enabled)) {
-		/*
-		 * User registered for timeout callback
-		 */
-		nvme_pcie_qpair_check_timeout(qpair);
-	}
-
 	/* Before returning, complete any pending admin request. */
 	if (spdk_unlikely(nvme_qpair_is_admin_queue(qpair))) {
 		nvme_pcie_qpair_complete_pending_admin_request(qpair);
@@ -2187,3 +2198,19 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 
 	return num_completions;
 }
+
+uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair)
+{
+	uint32_t count = 0;
+	struct nvme_pcie_qpair *pqpair = nvme_pcie_qpair(qpair);
+	struct nvme_tracker *tr;
+
+	assert(qpair != NULL);
+
+	TAILQ_FOREACH(tr, &pqpair->outstanding_tr, tq_list) {
+		count ++;
+	}
+
+	return count;
+}
+

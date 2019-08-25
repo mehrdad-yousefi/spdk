@@ -167,7 +167,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 	size_t total;
 	unsigned int idx;
 
-	fprintf(fp, "%s\n", label);
+	//fprintf(fp, "%s\n", label);
 
 	memset(buf16, 0, sizeof buf16);
 	total = 0;
@@ -199,7 +199,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 		total += snprintf(tmpbuf + total, sizeof tmpbuf - total, "   ");
 		buf16[idx % 16] = ' ';
 	}
-	snprintf(tmpbuf + total, sizeof tmpbuf - total, "  %s", buf16);
+	snprintf(tmpbuf + total, sizeof tmpbuf - total, " %s", buf16);
 	fprintf(fp, "%s\n", tmpbuf);
 	fflush(fp);
 }

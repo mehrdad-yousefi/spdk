@@ -248,6 +248,7 @@ struct nvme_request {
 
 	spdk_nvme_cmd_cb		cb_fn;
 	void				*cb_arg;
+	void        *cmdlog_entry;   //for pynvme
 	STAILQ_ENTRY(nvme_request)	stailq;
 
 	struct spdk_nvme_qpair		*qpair;
@@ -366,6 +367,9 @@ struct spdk_nvme_qpair {
 	struct spdk_nvme_ctrlr_process	*active_proc;
 
 	void				*req_buf;
+
+	// pynvme
+	void *pynvme_cmdlog;
 };
 
 struct spdk_nvme_ns {
@@ -388,6 +392,10 @@ struct spdk_nvme_ns {
 
 	/* Namespace Identification Descriptor List (CNS = 03h) */
 	uint8_t				id_desc_list[4096];
+
+	// pynvme: crc table
+	uint32_t *crc_table;
+	uint64_t table_size;
 };
 
 /**
@@ -588,6 +596,15 @@ struct spdk_nvme_ctrlr_process {
 	uint64_t			timeout_ticks;
 };
 
+struct msix_ctrl {
+	uint32_t bir;
+	uint32_t bir_offset;
+	uint64_t vir_addr;
+	uint64_t phys_addr;
+	uint32_t size;
+	void *msix_table;
+};
+
 /*
  * One of these per allocated PCI device.
  */
@@ -693,6 +710,9 @@ struct spdk_nvme_ctrlr {
 
 	STAILQ_HEAD(, nvme_request)	queued_aborts;
 	uint32_t			outstanding_aborts;
+
+	// pynvme
+	struct msix_ctrl *pynvme_intc_ctrl;
 };
 
 struct spdk_nvme_probe_ctx {
@@ -1077,6 +1097,7 @@ struct spdk_nvme_ctrlr *spdk_nvme_get_ctrlr_by_trid_unsafe(
 	int nvme_ ## name ## _qpair_reset(struct spdk_nvme_qpair *qpair); \
 	int nvme_ ## name ## _qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_request *req); \
 	int32_t nvme_ ## name ## _qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_completions); \
+	uint32_t nvme_ ## name ## _qpair_outstanding_count(struct spdk_nvme_qpair *qpair); \
 	void nvme_ ## name ## _admin_qpair_abort_aers(struct spdk_nvme_qpair *qpair); \
 
 DECLARE_TRANSPORT(transport) /* generic transport dispatch functions */
@@ -1103,5 +1124,13 @@ _is_page_aligned(uint64_t address, uint64_t page_size)
 {
 	return (address & (page_size - 1)) == 0;
 }
+
+// spdk new API provided to pynvme
+extern uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair);
+extern const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
+
+// pynvme driver API called by SPDK
+extern void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req);
+extern void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl);
 
 #endif /* __NVME_INTERNAL_H__ */
