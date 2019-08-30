@@ -271,6 +271,8 @@ _nvme_pcie_hotplug_monitor(struct spdk_nvme_probe_ctx *probe_ctx)
 	union spdk_nvme_csts_register csts;
 	struct spdk_nvme_ctrlr_process *proc;
 
+	return 0;
+
 	while (spdk_get_uevent(hotplug_fd, &event) > 0) {
 		if (event.subsystem == SPDK_NVME_UEVENT_SUBSYSTEM_UIO ||
 		    event.subsystem == SPDK_NVME_UEVENT_SUBSYSTEM_VFIO) {

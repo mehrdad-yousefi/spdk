@@ -352,8 +352,8 @@ nvme_tcp_ctrlr_destruct(struct spdk_nvme_ctrlr *ctrlr)
 	if (ctrlr->adminq) {
 		nvme_tcp_qpair_destroy(ctrlr->adminq);
 
-    // pynvme
-    cmdlog_free(ctrlr->adminq);
+		// pynvme
+		cmdlog_free(ctrlr->adminq);
 	}
 
 	nvme_ctrlr_destruct_finish(ctrlr);
@@ -1794,7 +1794,7 @@ nvme_tcp_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, uint16_t qid,
 
 	// pynvme: create qpair's cmdlog before using the qpair
 	cmdlog_init(qpair);
-  
+
 	rc = nvme_tcp_qpair_connect(qpair);
 	if (rc < 0) {
 		cmdlog_free(qpair);
