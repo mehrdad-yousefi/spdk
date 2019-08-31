@@ -350,10 +350,10 @@ nvme_tcp_ctrlr_destruct(struct spdk_nvme_ctrlr *ctrlr)
 	struct nvme_tcp_ctrlr *tctrlr = nvme_tcp_ctrlr(ctrlr);
 
 	if (ctrlr->adminq) {
-		nvme_tcp_qpair_destroy(ctrlr->adminq);
-
 		// pynvme
 		cmdlog_free(ctrlr->adminq);
+
+		nvme_tcp_qpair_destroy(ctrlr->adminq);
 	}
 
 	nvme_ctrlr_destruct_finish(ctrlr);
