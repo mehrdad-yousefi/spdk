@@ -1842,3 +1842,17 @@ cleanup:
 
 	return rc;
 }
+
+#include "../../../lib/nvme/nvme_internal.h"
+
+extern void intc_init(struct spdk_nvme_ctrlr *ctrlr);
+extern void cmdlog_init(struct spdk_nvme_qpair *q);
+extern void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl);
+extern void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req);
+extern void cmdlog_free(struct spdk_nvme_qpair *q);
+
+void intc_init(struct spdk_nvme_ctrlr *ctrlr) {}
+void cmdlog_init(struct spdk_nvme_qpair *q) {}
+void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl) {}
+void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req) {}
+void cmdlog_free(struct spdk_nvme_qpair *q) {}
