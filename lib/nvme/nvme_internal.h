@@ -950,6 +950,11 @@ nvme_complete_request(spdk_nvme_cmd_cb cb_fn, void *cb_arg, struct spdk_nvme_qpa
 	struct spdk_nvme_cpl            err_cpl;
 	struct nvme_error_cmd           *cmd;
 
+	// timeout command has manually completed already, so not to send cpl again
+	if (req->timed_out) {
+		return;
+	}
+
 	/* error injection at completion path,
 	 * only inject for successful completed commands
 	 */

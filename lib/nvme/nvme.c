@@ -274,8 +274,6 @@ nvme_request_check_timeout(struct nvme_request *req, uint16_t cid,
 		return 1;
 	}
 
-	req->timed_out = true;
-
 	/*
 	 * We don't want to expose the admin queue to the user,
 	 * so when we're timing out admin commands set the
@@ -284,6 +282,14 @@ nvme_request_check_timeout(struct nvme_request *req, uint16_t cid,
 	active_proc->timeout_cb_fn(active_proc->timeout_cb_arg, ctrlr,
 				   nvme_qpair_is_admin_queue(qpair) ? NULL : qpair,
 				   cid);
+
+	// pynvme: besides timeout callback, pynvme also complete the command immediately
+	struct spdk_nvme_cpl err_cpl;
+	memset(&err_cpl, 0xff, sizeof(err_cpl));
+	req->timed_out = false;
+	nvme_complete_request(req->cb_fn, req->cb_arg, qpair, req, &err_cpl);
+	req->timed_out = true;
+
 	return 0;
 }
 
