@@ -137,7 +137,7 @@ enum spdk_log_level spdk_log_get_print_level(void);
 #define SPDK_WARNLOG(...) \
 	spdk_log(SPDK_LOG_WARN, __FILE__, __LINE__, __func__, __VA_ARGS__)
 #define SPDK_ERRLOG(...) \
-	spdk_log(SPDK_LOG_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__)
+	spdk_log(SPDK_LOG_ERROR, __FILE__, __LINE__, __func__, __VA_ARGS__); assert(false)
 
 /**
  * Write messages to the log file. If \c level is set to \c SPDK_LOG_DISABLED,
