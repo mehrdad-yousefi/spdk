@@ -344,7 +344,7 @@ spdk_nvme_ctrlr_alloc_io_qpair(struct spdk_nvme_ctrlr *ctrlr,
 	 * default round robin arbitration method.
 	 */
 	if ((cc.bits.ams == SPDK_NVME_CC_AMS_RR) && (opts.qprio != SPDK_NVME_QPRIO_URGENT)) {
-		SPDK_ERRLOG("invalid queue priority for default round robin arbitration method\n");
+		SPDK_WARNLOG("invalid queue priority for default round robin arbitration method\n");
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 		return NULL;
 	}
