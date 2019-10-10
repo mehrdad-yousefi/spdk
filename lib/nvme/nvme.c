@@ -564,7 +564,7 @@ spdk_nvme_probe_internal(struct spdk_nvme_probe_ctx *probe_ctx,
 
 	rc = nvme_transport_ctrlr_scan(probe_ctx, direct_connect);
 	if (rc != 0) {
-		SPDK_ERRLOG("NVMe ctrlr scan failed\n");
+		SPDK_WARNLOG("NVMe ctrlr scan failed\n");
 		nvme_robust_mutex_unlock(&g_spdk_nvme_driver->lock);
 		return -1;
 	}
@@ -637,7 +637,7 @@ spdk_nvme_probe(const struct spdk_nvme_transport_id *trid, void *cb_ctx,
 	probe_ctx = spdk_nvme_probe_async(trid, cb_ctx, probe_cb,
 					  attach_cb, remove_cb);
 	if (!probe_ctx) {
-		SPDK_ERRLOG("Create probe context failed\n");
+		SPDK_WARNLOG("Create probe context failed\n");
 		return -1;
 	}
 
