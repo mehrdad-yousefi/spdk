@@ -1585,7 +1585,7 @@ _nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme
 	}
 
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		SPDK_ERRLOG("nvme_create_io_cq failed!\n");
+		SPDK_WARNLOG("nvme_create_io_cq failed!\n");
 		return -1;
 	}
 
@@ -1595,7 +1595,7 @@ _nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme
 	}
 
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		SPDK_ERRLOG("nvme_create_io_sq failed!\n");
+		SPDK_WARNLOG("nvme_create_io_sq failed!\n");
 		/* Attempt to delete the completion queue */
 		rc = nvme_pcie_ctrlr_cmd_delete_io_cq(qpair->ctrlr, qpair, nvme_completion_poll_cb, &status);
 		if (rc != 0) {
@@ -1660,7 +1660,7 @@ nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, uint16_t qid,
 	rc = _nvme_pcie_ctrlr_create_io_qpair(ctrlr, qpair, qid);
 
 	if (rc != 0) {
-		SPDK_ERRLOG("I/O queue creation failed\n");
+		SPDK_WARNLOG("I/O queue creation failed\n");
 		nvme_pcie_qpair_destroy(qpair);
 		return NULL;
 	}
