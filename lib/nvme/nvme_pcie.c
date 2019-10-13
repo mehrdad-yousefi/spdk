@@ -890,8 +890,8 @@ struct spdk_nvme_ctrlr *nvme_pcie_ctrlr_construct(const struct spdk_nvme_transpo
 	}
 
 	// pynvme: enable msix interrupt
+	extern void intc_init(struct spdk_nvme_ctrlr * ctrlr);
 	intc_init(&pctrlr->ctrlr);
-	cmdlog_init_msix(pctrlr->ctrlr.adminq);
 
 	if (g_sigset != true) {
 		nvme_pcie_ctrlr_setup_signal();
@@ -1489,7 +1489,9 @@ nvme_pcie_ctrlr_cmd_create_io_cq(struct spdk_nvme_ctrlr *ctrlr,
 	 * 0x2 = interrupts enabled
 	 * 0x1 = physically contiguous
 	 */
-	cmd->cdw11 = 0x3 | (io_que->id << 16); // pynvme: enables msix
+  // pynvme: enables msix
+  extern uint32_t intc_get_cmd_vec_info(struct spdk_nvme_qpair *q);
+  cmd->cdw11 = intc_get_cmd_vec_info(io_que);
 	cmd->dptr.prp.prp1 = pqpair->cpl_bus_addr;
 
 	return nvme_ctrlr_submit_admin_request(ctrlr, req);
@@ -1655,9 +1657,6 @@ nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, uint16_t qid,
 		nvme_pcie_qpair_destroy(qpair);
 		return NULL;
 	}
-
-	// pynvme: create msix interrupt resource for pcie controller
-	cmdlog_init_msix(qpair);
 
 	return qpair;
 }

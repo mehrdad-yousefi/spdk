@@ -82,7 +82,6 @@ main(int argc, char **argv)
 void intc_init(struct spdk_nvme_ctrlr *ctrlr) {}
 void intc_fini(struct spdk_nvme_ctrlr *ctrlr) {}
 void cmdlog_init(struct spdk_nvme_qpair *q) {}
-void cmdlog_init_msix(struct spdk_nvme_qpair *q) {}
 void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req) {}
 void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl) {}
 void cmdlog_free(struct spdk_nvme_qpair *q) {}
