@@ -153,41 +153,38 @@ extern pid_t g_spdk_nvme_pid;
 
 /*intr data structure defination*/
 #define MAX_VECTOR_NUM        (32)
-typedef struct _msix_intr_ctrl
-{
-  uint32_t bir;
-  uint32_t bir_offset;
-  uint64_t vir_addr;
-  uint64_t phys_addr;
-  uint32_t size;
-  void *msix_table;
+typedef struct _msix_intr_ctrl {
+	uint32_t bir;
+	uint32_t bir_offset;
+	uint64_t vir_addr;
+	uint64_t phys_addr;
+	uint32_t size;
+	void *msix_table;
 } msix_intr_ctrl;
 
-typedef struct _msi_intr_ctrl
-{
-  uint8_t pvm_support;
-  uint8_t rsvd[3];
+typedef struct _msi_intr_ctrl {
+	uint8_t pvm_support;
+	uint8_t rsvd[3];
 } msi_intr_ctrl;
 
-typedef volatile struct _msix_entry
-{
-  uint64_t msg_addr;
-  uint32_t msg_data;
-  uint32_t mask : 1;
-  uint32_t rsvd : 31;
+typedef volatile struct _msix_entry {
+	uint64_t msg_addr;
+	uint32_t msg_data;
+	uint32_t mask : 1;
+	uint32_t rsvd : 31;
 } msix_entry;
 
-typedef struct _intr_ctrl
-{
-  msix_intr_ctrl msix_info;
-  msi_intr_ctrl msi_info;
-  uint8_t msi_en : 1;
-  uint8_t msix_en : 1;
-  uint8_t rsvd : 6;
-  uint8_t dummy[1];
-  uint16_t max_vec_num;
-  uint32_t msg_data[MAX_VECTOR_NUM];
+typedef struct _intr_ctrl {
+	msix_intr_ctrl msix_info;
+	msi_intr_ctrl msi_info;
+	uint8_t msi_en : 1;
+	uint8_t msix_en : 1;
+	uint8_t rsvd : 6;
+	uint8_t dummy[1];
+	uint16_t max_vec_num;
+	uint32_t msg_data[MAX_VECTOR_NUM];
 } intr_ctrl_t;
+
 /* We want to fit submission and completion rings each in a single 2MB
  * hugepage to ensure physical address contiguity.
  */
@@ -840,6 +837,7 @@ nvme_robust_mutex_unlock(pthread_mutex_t *mtx)
 // pynvme APIs for SPDK
 extern void intc_init(struct spdk_nvme_ctrlr *ctrlr);
 extern void intc_fini(struct spdk_nvme_ctrlr *ctrlr);
+extern uint32_t intc_get_cmd_vec_info(struct spdk_nvme_qpair *q);
 extern void cmdlog_init(struct spdk_nvme_qpair *q);
 extern void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req);
 extern void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl);
