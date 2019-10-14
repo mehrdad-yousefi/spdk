@@ -2063,7 +2063,7 @@ spdk_nvmf_ctrlr_process_admin_cmd(struct spdk_nvmf_request *req)
 	}
 
 invalid_opcode:
-	SPDK_ERRLOG("Unsupported admin opcode 0x%x\n", cmd->opc);
+	SPDK_WARNLOG("Unsupported admin opcode 0x%x\n", cmd->opc);
 	response->status.sct = SPDK_NVME_SCT_GENERIC;
 	response->status.sc = SPDK_NVME_SC_INVALID_OPCODE;
 	return SPDK_NVMF_REQUEST_EXEC_STATUS_COMPLETE;
