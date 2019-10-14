@@ -1818,6 +1818,7 @@ int main(int argc, char **argv)
 
 void intc_init(struct spdk_nvme_ctrlr *ctrlr) {}
 void intc_fini(struct spdk_nvme_ctrlr *ctrlr) {}
+uint32_t intc_get_cmd_vec_info(struct spdk_nvme_qpair *q) {return 0;}
 void cmdlog_init(struct spdk_nvme_qpair *q) {}
 void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req) {}
 void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl) {}
