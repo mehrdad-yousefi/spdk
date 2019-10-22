@@ -89,7 +89,8 @@ __attribute__((constructor)) static void register_flag_##flag(void) \
 	do {										\
 		extern struct spdk_log_flag FLAG;					\
 		if ((FLAG.enabled) && (LEN)) {						\
-			spdk_log_dump(stderr, (LABEL), (BUF), (LEN));			\
+			spdk_log(SPDK_LOG_INFO, __FILE__, __LINE__, __func__, (LABEL));   \
+			spdk_log_dump(stderr, (LABEL), (BUF), (LEN));                     \
 		}									\
 	} while (0)
 
