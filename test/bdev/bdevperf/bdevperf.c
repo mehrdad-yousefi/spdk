@@ -1391,6 +1391,9 @@ main(int argc, char **argv)
 	g_time_in_sec = 0;
 	g_mix_specified = false;
 
+	spdk_log_set_flag("all");
+	spdk_log_set_print_level(SPDK_LOG_INFO);
+
 	if ((rc = spdk_app_parse_args(argc, argv, &opts, "zq:o:t:w:M:P:S:T:", NULL,
 				      bdevperf_parse_arg, bdevperf_usage)) !=
 	    SPDK_APP_PARSE_ARGS_SUCCESS) {
@@ -1410,3 +1413,13 @@ main(int argc, char **argv)
 	spdk_app_fini();
 	return g_run_failed;
 }
+
+#include "../../../lib/nvme/nvme_internal.h"
+
+void intc_init(struct spdk_nvme_ctrlr *ctrlr) {}
+void intc_fini(struct spdk_nvme_ctrlr *ctrlr) {}
+uint32_t intc_get_cmd_vec_info(struct spdk_nvme_qpair *q) {return 0;}
+void cmdlog_init(struct spdk_nvme_qpair *q) {}
+void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req) {}
+void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl) {}
+void cmdlog_free(struct spdk_nvme_qpair *q) {}
