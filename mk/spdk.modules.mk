@@ -54,6 +54,7 @@ SYS_LIBS += -libverbs -lrdmacm
 endif
 
 ifeq ($(OS),Linux)
+BLOCKDEV_MODULES_LIST += ftl
 BLOCKDEV_MODULES_LIST += bdev_aio
 SYS_LIBS += -laio
 ifeq ($(CONFIG_VIRTIO),y)
@@ -96,5 +97,7 @@ SYS_LIBS += -lvppinfra -lsvm -lvlibmemoryclient
 SYS_LIBS += -Wl,--no-whole-archive
 SOCK_MODULES_LIST += sock_vpp
 endif
+
+COPY_MODULES_LIST = copy_ioat ioat
 
 ALL_MODULES_LIST = $(BLOCKDEV_MODULES_LIST) $(COPY_MODULES_LIST) $(SOCK_MODULES_LIST)
