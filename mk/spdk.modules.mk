@@ -31,7 +31,9 @@
 #  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-BLOCKDEV_MODULES_LIST = bdev_malloc vmd
+BLOCKDEV_MODULES_LIST = bdev_lvol blobfs blob blob_bdev lvol
+BLOCKDEV_MODULES_LIST += bdev_malloc bdev_null bdev_nvme nvme bdev_passthru bdev_error bdev_gpt bdev_split bdev_delay vmd
+BLOCKDEV_MODULES_LIST += bdev_raid
 
 ifeq ($(CONFIG_CRYPTO),y)
 BLOCKDEV_MODULES_LIST += bdev_crypto
@@ -52,6 +54,7 @@ SYS_LIBS += -libverbs -lrdmacm
 endif
 
 ifeq ($(OS),Linux)
+BLOCKDEV_MODULES_LIST += ftl
 BLOCKDEV_MODULES_LIST += bdev_aio
 SYS_LIBS += -laio
 ifeq ($(CONFIG_VIRTIO),y)
@@ -94,5 +97,7 @@ SYS_LIBS += -lvppinfra -lsvm -lvlibmemoryclient
 SYS_LIBS += -Wl,--no-whole-archive
 SOCK_MODULES_LIST += sock_vpp
 endif
+
+COPY_MODULES_LIST = copy_ioat ioat
 
 ALL_MODULES_LIST = $(BLOCKDEV_MODULES_LIST) $(COPY_MODULES_LIST) $(SOCK_MODULES_LIST)

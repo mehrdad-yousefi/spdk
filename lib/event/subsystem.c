@@ -160,7 +160,7 @@ spdk_subsystem_init(spdk_msg_fn cb_fn, void *cb_arg)
 
 	/* Verify that all dependency name and depends_on subsystems are registered */
 	TAILQ_FOREACH(dep, &g_subsystems_deps, tailq) {
-    SPDK_NOTICELOG("subsystem %s => %s\n", dep->name, dep->depends_on);
+		SPDK_NOTICELOG("subsystem %s => %s\n", dep->name, dep->depends_on);
 		if (!spdk_subsystem_find(&g_subsystems, dep->name)) {
 			SPDK_ERRLOG("subsystem %s is missing\n", dep->name);
 			spdk_app_stop(-1);
