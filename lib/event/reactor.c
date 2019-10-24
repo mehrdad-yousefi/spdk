@@ -200,12 +200,12 @@ get_rusage(struct spdk_reactor *reactor)
 		return -1;
 	}
 
-	if (rusage.ru_nvcsw != reactor->rusage.ru_nvcsw || rusage.ru_nivcsw != reactor->rusage.ru_nivcsw) {
-		SPDK_DEBUGLOG(SPDK_LOG_REACTOR,
-			      "Reactor %d: %ld voluntary context switches and %ld involuntary context switches in the last second.\n",
-			      reactor->lcore, rusage.ru_nvcsw - reactor->rusage.ru_nvcsw,
-			      rusage.ru_nivcsw - reactor->rusage.ru_nivcsw);
-	}
+	/* if (rusage.ru_nvcsw != reactor->rusage.ru_nvcsw || rusage.ru_nivcsw != reactor->rusage.ru_nivcsw) { */
+	/* 	SPDK_DEBUGLOG(SPDK_LOG_REACTOR, */
+	/* 		      "Reactor %d: %ld voluntary context switches and %ld involuntary context switches in the last second.\n", */
+	/* 		      reactor->lcore, rusage.ru_nvcsw - reactor->rusage.ru_nvcsw, */
+	/* 		      rusage.ru_nivcsw - reactor->rusage.ru_nivcsw); */
+	/* } */
 	reactor->rusage = rusage;
 
 	return -1;

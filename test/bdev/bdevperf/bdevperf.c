@@ -1391,9 +1391,6 @@ main(int argc, char **argv)
 	g_time_in_sec = 0;
 	g_mix_specified = false;
 
-	spdk_log_set_flag("all");
-	spdk_log_set_print_level(SPDK_LOG_INFO);
-
 	if ((rc = spdk_app_parse_args(argc, argv, &opts, "zq:o:t:w:M:P:S:T:", NULL,
 				      bdevperf_parse_arg, bdevperf_usage)) !=
 	    SPDK_APP_PARSE_ARGS_SUCCESS) {
