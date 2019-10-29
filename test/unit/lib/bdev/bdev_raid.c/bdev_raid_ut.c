@@ -395,7 +395,7 @@ spdk_for_each_thread(spdk_msg_fn fn, void *ctx, spdk_msg_fn cpl)
 }
 
 void
-spdk_thread_send_msg(const struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
+spdk_thread_send_msg(struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
 {
 	fn(ctx);
 }
