@@ -936,8 +936,6 @@ nvme_pcie_ctrlr_destruct(struct spdk_nvme_ctrlr *ctrlr)
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 	struct spdk_pci_device *devhandle = nvme_ctrlr_proc_get_devhandle(ctrlr);
 
-	close(pctrlr->claim_fd);
-
 	// pynvme: free interrupt on pcie controller
 	intc_fini(ctrlr);
 

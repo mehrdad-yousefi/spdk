@@ -771,8 +771,6 @@ struct spdk_nvme_ctrlr {
 
 	STAILQ_HEAD(, nvme_io_msg_producer) io_producers;
 
-	struct msix_ctrl *pynvme_intc_ctrl;  // for pynvme
-
 	intr_ctrl_t *pynvme_intc_ctrl;  // for pynvme
 };
 
