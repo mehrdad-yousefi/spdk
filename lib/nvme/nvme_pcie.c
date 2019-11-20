@@ -271,7 +271,8 @@ _nvme_pcie_hotplug_monitor(struct spdk_nvme_probe_ctx *probe_ctx)
 	union spdk_nvme_csts_register csts;
 	struct spdk_nvme_ctrlr_process *proc;
 
-	return 0;  // pynvme: not support hotplug for dpdk hotplug_mp
+	// pynvme: not support hotplug for dpdk hotplug_mp
+	return 0;
 
 	while (spdk_get_uevent(hotplug_fd, &event) > 0) {
 		if (event.subsystem == SPDK_NVME_UEVENT_SUBSYSTEM_UIO ||
@@ -2005,6 +2006,18 @@ nvme_pcie_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_reques
 		}
 	}
 
+	// pynvme: prp is special for cq/sq create
+	if (req->cmd.opc == SPDK_NVME_OPC_CREATE_IO_CQ ||
+	    req->cmd.opc == SPDK_NVME_OPC_CREATE_IO_SQ) {
+		// correct prp only when payload is wrong, when creating cq/sq
+		if (req->payload_size != 0) {
+			// only prp1 is filled as the starting location
+			void *virt_addr = req->payload.contig_or_cb_arg + req->payload_offset;
+			req->cmd.dptr.prp.prp1 = spdk_vtophys(virt_addr, NULL);
+			req->payload_size = 0;
+		}
+	}
+
 	if (req->payload_size == 0) {
 		/* Null payload - leave PRP fields untouched */
 		rc = 0;
@@ -2201,4 +2214,3 @@ uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair)
 
 	return count;
 }
-
