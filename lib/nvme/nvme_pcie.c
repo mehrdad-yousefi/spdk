@@ -2006,11 +2006,11 @@ nvme_pcie_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_reques
 		}
 	}
 
-	// pynvme: prp is special for cq/sq create
+	// pynvme: prp is special for cq/sq create in admin queue
 	if (req->cmd.opc == SPDK_NVME_OPC_CREATE_IO_CQ ||
 	    req->cmd.opc == SPDK_NVME_OPC_CREATE_IO_SQ) {
 		// correct prp only when payload is wrong, when creating cq/sq
-		if (req->payload_size != 0) {
+		if (qpair->id == 0 && req->payload_size != 0) {
 			// only prp1 is filled as the starting location
 			void *virt_addr = req->payload.contig_or_cb_arg + req->payload_offset;
 			req->cmd.dptr.prp.prp1 = spdk_vtophys(virt_addr, NULL);
