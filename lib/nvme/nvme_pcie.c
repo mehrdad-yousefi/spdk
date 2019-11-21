@@ -378,7 +378,7 @@ nvme_pcie_ctrlr_set_reg_8(struct spdk_nvme_ctrlr *ctrlr, uint32_t offset, uint64
 {
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 
-	assert(offset <= sizeof(struct spdk_nvme_registers) - 8);
+	//assert(offset <= sizeof(struct spdk_nvme_registers) - 8);
 	g_thread_mmio_ctrlr = pctrlr;
 	spdk_mmio_write_8(nvme_pcie_reg_addr(ctrlr, offset), value);
 	g_thread_mmio_ctrlr = NULL;
@@ -390,7 +390,7 @@ nvme_pcie_ctrlr_get_reg_4(struct spdk_nvme_ctrlr *ctrlr, uint32_t offset, uint32
 {
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 
-	assert(offset <= sizeof(struct spdk_nvme_registers) - 4);
+	//assert(offset <= sizeof(struct spdk_nvme_registers) - 4);
 	assert(value != NULL);
 	g_thread_mmio_ctrlr = pctrlr;
 	*value = spdk_mmio_read_4(nvme_pcie_reg_addr(ctrlr, offset));
@@ -407,7 +407,7 @@ nvme_pcie_ctrlr_get_reg_8(struct spdk_nvme_ctrlr *ctrlr, uint32_t offset, uint64
 {
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 
-	assert(offset <= sizeof(struct spdk_nvme_registers) - 8);
+	//assert(offset <= sizeof(struct spdk_nvme_registers) - 8);
 	assert(value != NULL);
 	g_thread_mmio_ctrlr = pctrlr;
 	*value = spdk_mmio_read_8(nvme_pcie_reg_addr(ctrlr, offset));
