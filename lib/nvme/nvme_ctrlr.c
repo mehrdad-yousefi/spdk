@@ -699,7 +699,7 @@ nvme_ctrlr_shutdown(struct spdk_nvme_ctrlr *ctrlr)
 	}
 
 	if (nvme_ctrlr_get_cc(ctrlr, &cc)) {
-		SPDK_ERRLOG("get_cc() failed\n");
+		SPDK_WARNLOG("get_cc() failed\n");
 		return;
 	}
 
