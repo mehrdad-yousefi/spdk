@@ -3166,3 +3166,16 @@ spdk_nvme_ctrlr_get_transport_id(struct spdk_nvme_ctrlr *ctrlr)
 {
 	return &ctrlr->trid;
 }
+
+uint32_t
+spdk_nvme_io_qpair_count(struct spdk_nvme_ctrlr *ctrlr)
+{
+	uint32_t count = 0;
+	struct spdk_nvme_qpair	*qpair;
+
+	TAILQ_FOREACH(qpair, &ctrlr->active_io_qpairs, tailq) {
+		count ++;
+	}
+
+	return count;
+}

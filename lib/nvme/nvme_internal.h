@@ -1217,6 +1217,7 @@ _is_page_aligned(uint64_t address, uint64_t page_size)
 }
 
 // spdk new API provided to pynvme
+extern uint32_t spdk_nvme_io_qpair_count(struct spdk_nvme_ctrlr *ctrlr);
 extern uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair);
 extern const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
 
