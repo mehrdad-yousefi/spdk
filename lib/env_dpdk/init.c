@@ -432,13 +432,15 @@ spdk_env_init(const struct spdk_env_opts *opts)
 		return -EINVAL;
 	}
 
+#if 0 // less output: Starting SPDK v19.10 / DPDK 19.08.0 initialization...
 	fprintf(stderr, "Starting %s / %s initialization...\n", SPDK_VERSION_STRING, rte_version());
 	fprintf(stderr, "[ DPDK EAL parameters: ");
 	for (i = 0; i < g_eal_cmdline_argcount; i++) {
 		fprintf(stderr, "%s ", g_eal_cmdline[i]);
 	}
 	fprintf(stderr, "]\n");
-
+#endif
+  
 	/* DPDK rearranges the array we pass to it, so make a copy
 	 * before passing so we can still free the individual strings
 	 * correctly.
