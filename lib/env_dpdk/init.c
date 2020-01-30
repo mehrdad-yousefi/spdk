@@ -421,7 +421,7 @@ int
 spdk_env_init(const struct spdk_env_opts *opts)
 {
 	char **dpdk_args = NULL;
-	int i, rc;
+	int rc;
 	int orig_optind;
 
 	g_external_init = false;
@@ -435,7 +435,7 @@ spdk_env_init(const struct spdk_env_opts *opts)
 #if 0 // less output: Starting SPDK v19.10 / DPDK 19.08.0 initialization...
 	fprintf(stderr, "Starting %s / %s initialization...\n", SPDK_VERSION_STRING, rte_version());
 	fprintf(stderr, "[ DPDK EAL parameters: ");
-	for (i = 0; i < g_eal_cmdline_argcount; i++) {
+	for (int i = 0; i < g_eal_cmdline_argcount; i++) {
 		fprintf(stderr, "%s ", g_eal_cmdline[i]);
 	}
 	fprintf(stderr, "]\n");
