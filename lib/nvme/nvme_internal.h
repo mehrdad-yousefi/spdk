@@ -151,8 +151,10 @@ extern pid_t g_spdk_nvme_pid;
 
 #define MIN_KEEP_ALIVE_TIMEOUT_IN_MS	(10000)
 
+#define MAX_VECTOR_NUM        (2048)
+
+
 /*intr data structure defination*/
-#define MAX_VECTOR_NUM        (32)
 typedef struct _msix_intr_ctrl {
 	uint32_t bir;
 	uint32_t bir_offset;
