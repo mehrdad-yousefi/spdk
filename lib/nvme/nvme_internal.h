@@ -151,7 +151,8 @@ extern pid_t g_spdk_nvme_pid;
 
 #define MIN_KEEP_ALIVE_TIMEOUT_IN_MS	(10000)
 
-#define MAX_VECTOR_NUM        (2048)
+#define MAX_VECTOR_NUM_SHIFT   (11)
+#define MAX_VECTOR_NUM         (1<<(MAX_VECTOR_NUM_SHIFT))
 
 
 /*intr data structure defination*/
