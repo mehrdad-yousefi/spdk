@@ -440,7 +440,7 @@ spdk_env_init(const struct spdk_env_opts *opts)
 	}
 	fprintf(stderr, "]\n");
 #endif
-  
+
 	/* DPDK rearranges the array we pass to it, so make a copy
 	 * before passing so we can still free the individual strings
 	 * correctly.
