@@ -103,6 +103,7 @@ enum spdk_lv0_discovery_feature_code {
 	 */
 	FEATURECODE_OPALV200	= 0x0203,
 	FEATURECODE_GEOMETRY	= 0x0003,
+	FEATURECODE_PYRITE200	= 0x0303,
 
 	/*
 	 * TCG Storage Opal Feature Set Single User Mode v1.00 r2.00
