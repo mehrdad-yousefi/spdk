@@ -103,6 +103,8 @@ enum spdk_lv0_discovery_feature_code {
 	 */
 	FEATURECODE_OPALV200	= 0x0203,
 	FEATURECODE_GEOMETRY	= 0x0003,
+
+  // pynvme: support pyrite
 	FEATURECODE_PYRITE100	= 0x0302,
 	FEATURECODE_PYRITE200	= 0x0303,
 
