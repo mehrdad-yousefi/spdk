@@ -886,6 +886,7 @@ opal_discovery0_end(struct spdk_opal_dev *dev)
 			supported = true;
 			break;
 		case FEATURECODE_OPALV200:
+    case FEATURECODE_PYRITE100:
     case FEATURECODE_PYRITE200:
 			comid = opal_get_comid_v200(dev, body);
 			found_com_id = true;
