@@ -567,9 +567,11 @@ nvme_ctrlr_set_supported_log_pages(struct spdk_nvme_ctrlr *ctrlr)
 	if (ctrlr->cdata.lpa.celp) {
 		ctrlr->log_page_supported[SPDK_NVME_LOG_COMMAND_EFFECTS_LOG] = true;
 	}
-	if (ctrlr->cdata.vid == SPDK_PCI_VID_INTEL && !(ctrlr->quirks & NVME_INTEL_QUIRK_NO_LOG_PAGES)) {
-		rc = nvme_ctrlr_set_intel_support_log_pages(ctrlr);
-	}
+
+	// pynvme: ignore intel log pages
+	//if (ctrlr->cdata.vid == SPDK_PCI_VID_INTEL && !(ctrlr->quirks & NVME_INTEL_QUIRK_NO_LOG_PAGES)) {
+	//	rc = nvme_ctrlr_set_intel_support_log_pages(ctrlr);
+	//}
 
 	return rc;
 }
@@ -2344,6 +2346,7 @@ nvme_ctrlr_process_init(struct spdk_nvme_ctrlr *ctrlr)
 	case NVME_CTRLR_STATE_ENABLE_WAIT_FOR_READY_1:
 		if (csts.bits.rdy == 1) {
 			SPDK_DEBUGLOG(SPDK_LOG_NVME, "CC.EN = 1 && CSTS.RDY = 1 - controller is ready\n");
+
 			/*
 			 * The controller has been enabled.
 			 *  Perform the rest of initialization serially.
