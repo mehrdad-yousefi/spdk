@@ -569,9 +569,9 @@ nvme_ctrlr_set_supported_log_pages(struct spdk_nvme_ctrlr *ctrlr)
 	}
 
 	// pynvme: ignore intel log pages
-	//if (ctrlr->cdata.vid == SPDK_PCI_VID_INTEL && !(ctrlr->quirks & NVME_INTEL_QUIRK_NO_LOG_PAGES)) {
-	//	rc = nvme_ctrlr_set_intel_support_log_pages(ctrlr);
-	//}
+	if (false && ctrlr->cdata.vid == SPDK_PCI_VID_INTEL && !(ctrlr->quirks & NVME_INTEL_QUIRK_NO_LOG_PAGES)) {
+		rc = nvme_ctrlr_set_intel_support_log_pages(ctrlr);
+	}
 
 	return rc;
 }
