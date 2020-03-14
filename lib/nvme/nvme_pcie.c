@@ -1677,7 +1677,7 @@ int
 nvme_pcie_ctrlr_delete_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_qpair *qpair)
 {
 	struct nvme_completion_poll_status status;
-	int rc;
+	int rc = 0;
 
 	assert(ctrlr != NULL);
 
@@ -1689,20 +1689,22 @@ nvme_pcie_ctrlr_delete_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_
 	rc = nvme_pcie_ctrlr_cmd_delete_io_sq(ctrlr, qpair, nvme_completion_poll_cb, &status);
 	if (rc != 0) {
 		SPDK_ERRLOG("Failed to send request to delete_io_sq with rc=%d\n", rc);
-		return rc;
+		goto free;
 	}
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		return -1;
+    rc = -1;
+		goto free;
 	}
 
 	/* Delete the completion queue */
 	rc = nvme_pcie_ctrlr_cmd_delete_io_cq(ctrlr, qpair, nvme_completion_poll_cb, &status);
 	if (rc != 0) {
 		SPDK_ERRLOG("Failed to send request to delete_io_cq with rc=%d\n", rc);
-		return rc;
+		goto free;
 	}
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		return -1;
+    rc = -1;
+		goto free;
 	}
 
 free:
@@ -1712,7 +1714,7 @@ free:
 	}
 
 	nvme_pcie_qpair_destroy(qpair);
-	return 0;
+	return rc;
 }
 
 static void
