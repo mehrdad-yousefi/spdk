@@ -1692,7 +1692,7 @@ nvme_pcie_ctrlr_delete_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_
 		goto free;
 	}
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-    rc = -1;
+		rc = -1;
 		goto free;
 	}
 
@@ -1703,7 +1703,7 @@ nvme_pcie_ctrlr_delete_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme_
 		goto free;
 	}
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-    rc = -1;
+		rc = -1;
 		goto free;
 	}
 
