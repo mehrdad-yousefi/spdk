@@ -344,7 +344,7 @@ spdk_nvme_ctrlr_alloc_io_qpair(struct spdk_nvme_ctrlr *ctrlr,
 	 * default round robin arbitration method.
 	 */
 	if ((cc.bits.ams == SPDK_NVME_CC_AMS_RR) && (opts.qprio != SPDK_NVME_QPRIO_URGENT)) {
-		SPDK_WARNLOG("invalid queue priority for default round robin arbitration method\n");
+		SPDK_ERRLOG("invalid queue priority for default round robin arbitration method\n");
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 		return NULL;
 	}
@@ -354,14 +354,14 @@ spdk_nvme_ctrlr_alloc_io_qpair(struct spdk_nvme_ctrlr *ctrlr,
 	 */
 	qid = spdk_bit_array_find_first_set(ctrlr->free_io_qids, 1);
 	if (qid > ctrlr->opts.num_io_queues) {
-		SPDK_WARNLOG("No free I/O queue IDs\n");
+		SPDK_ERRLOG("No free I/O queue IDs\n");
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 		return NULL;
 	}
 
 	qpair = nvme_transport_ctrlr_create_io_qpair(ctrlr, qid, &opts);
 	if (qpair == NULL) {
-		SPDK_WARNLOG("nvme_transport_ctrlr_create_io_qpair() failed\n");
+		SPDK_ERRLOG("nvme_transport_ctrlr_create_io_qpair() failed\n");
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 		return NULL;
 	}
@@ -702,7 +702,7 @@ nvme_ctrlr_shutdown(struct spdk_nvme_ctrlr *ctrlr)
 	}
 
 	if (nvme_ctrlr_get_cc(ctrlr, &cc)) {
-		SPDK_WARNLOG("get_cc() failed\n");
+		SPDK_ERRLOG("get_cc() failed\n");
 		return;
 	}
 
@@ -2584,8 +2584,8 @@ nvme_ctrlr_destruct(struct spdk_nvme_ctrlr *ctrlr)
 	nvme_ctrlr_free_doorbell_buffer(ctrlr);
 
 	if (ctrlr->opts.no_shn_notification) {
-		SPDK_INFOLOG(SPDK_LOG_NVME, "Disable SSD: %s without shutdown notification\n",
-			     ctrlr->trid.traddr);
+		SPDK_DEBUGLOG(SPDK_LOG_NVME, "Disable SSD: %s without shutdown notification\n",
+			      ctrlr->trid.traddr);
 		nvme_ctrlr_disable(ctrlr);
 	} else {
 		nvme_ctrlr_shutdown(ctrlr);

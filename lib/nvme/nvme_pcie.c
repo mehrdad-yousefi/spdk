@@ -104,6 +104,9 @@ struct nvme_pcie_ctrlr {
 
 	/* Flag to indicate the MMIO register has been remapped */
 	bool is_remapped;
+
+	// backup bar for dirty power cycle
+	volatile struct spdk_nvme_registers *regs_bak;
 };
 
 struct nvme_tracker {
@@ -1575,7 +1578,7 @@ _nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme
 	}
 
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		SPDK_WARNLOG("nvme_create_io_cq failed!\n");
+		SPDK_ERRLOG("nvme_create_io_cq failed!\n");
 		return -1;
 	}
 
@@ -1585,7 +1588,7 @@ _nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, struct spdk_nvme
 	}
 
 	if (spdk_nvme_wait_for_completion(ctrlr->adminq, &status)) {
-		SPDK_WARNLOG("nvme_create_io_sq failed!\n");
+		SPDK_ERRLOG("nvme_create_io_sq failed!\n");
 		/* Attempt to delete the completion queue */
 		rc = nvme_pcie_ctrlr_cmd_delete_io_cq(qpair->ctrlr, qpair, nvme_completion_poll_cb, &status);
 		if (rc != 0) {
@@ -1650,7 +1653,7 @@ nvme_pcie_ctrlr_create_io_qpair(struct spdk_nvme_ctrlr *ctrlr, uint16_t qid,
 	rc = nvme_transport_ctrlr_connect_qpair(ctrlr, qpair);
 
 	if (rc != 0) {
-		SPDK_WARNLOG("I/O queue creation failed\n");
+		SPDK_ERRLOG("I/O queue creation failed\n");
 		nvme_pcie_qpair_destroy(qpair);
 		return NULL;
 	}
@@ -2216,3 +2219,33 @@ uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair)
 
 	return count;
 }
+
+void nvme_pcie_bar_remap_recover(struct spdk_nvme_ctrlr *ctrlr)
+{
+	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
+
+	pctrlr->regs = pctrlr->regs_bak;
+}
+
+
+int nvme_pcie_bar_remap(struct spdk_nvme_ctrlr *ctrlr)
+{
+	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
+	void *map_address;
+
+	map_address = mmap((void *)pctrlr->regs,
+			   pctrlr->regs_size,
+			   PROT_READ | PROT_WRITE,
+			   MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED,
+			   -1, 0);
+	if (map_address == MAP_FAILED) {
+		SPDK_ERRLOG("mmap failed\n");
+		return -1;
+	}
+
+	memset(map_address, 0xFF, sizeof(struct spdk_nvme_registers));
+	pctrlr->regs_bak = pctrlr->regs;
+	pctrlr->regs = (volatile struct spdk_nvme_registers *)map_address;
+	return 0;
+}
+

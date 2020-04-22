@@ -115,14 +115,14 @@ spdk_log(enum spdk_log_level level, const char *file, const int line, const char
 	char buf[MAX_TMPBUF];
 	va_list ap;
 
-	if (level > g_spdk_log_print_level && level > g_spdk_log_level) {
-		return;
-	}
-
 	if (g_log) {
 		va_start(ap, format);
 		g_log(level, file, line, func, format, ap);
 		va_end(ap);
+		return;
+	}
+
+	if (level > g_spdk_log_print_level && level > g_spdk_log_level) {
 		return;
 	}
 
