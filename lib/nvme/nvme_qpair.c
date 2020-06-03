@@ -500,7 +500,8 @@ spdk_nvme_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 	 * submit as many queued requests as we completed.
 	 */
 	i = 0;
-	while (i < ret && !STAILQ_EMPTY(&qpair->queued_req) && !qpair->ctrlr->is_resetting) {
+	// pynvme: resubmit requests out of spdk
+	while (0 && i < ret && !STAILQ_EMPTY(&qpair->queued_req) && !qpair->ctrlr->is_resetting) {
 		req = STAILQ_FIRST(&qpair->queued_req);
 		STAILQ_REMOVE_HEAD(&qpair->queued_req, stailq);
 		resubmit_rc = nvme_qpair_resubmit_request(qpair, req);
@@ -707,7 +708,8 @@ nvme_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_request *re
 {
 	int rc;
 
-	if (spdk_unlikely(!STAILQ_EMPTY(&qpair->queued_req) && req->num_children == 0)) {
+	// pynvme: submit even when queued_req exists
+	if (0 && spdk_unlikely(!STAILQ_EMPTY(&qpair->queued_req) && req->num_children == 0)) {
 		/*
 		 * requests that have no children should be sent to the transport after all
 		 * currently queued requests. Requests with chilren will be split and go back

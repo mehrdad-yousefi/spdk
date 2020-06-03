@@ -41,6 +41,7 @@
 #include <rte_config.h>
 #include <rte_eal.h>
 #include <rte_errno.h>
+#include <rte_vfio.h>
 
 #define SPDK_ENV_DPDK_DEFAULT_NAME		"spdk"
 #define SPDK_ENV_DPDK_DEFAULT_SHM_ID		-1
@@ -174,6 +175,75 @@ spdk_push_arg(char *args[], int *argcount, char *arg)
 
 	return tmp;
 }
+
+#if defined(__linux__) && defined(__x86_64__)
+
+/* TODO: Can likely get this value from rlimits in the future */
+#define SPDK_IOMMU_VA_REQUIRED_WIDTH 48
+#define VTD_CAP_MGAW_SHIFT 16
+#define VTD_CAP_MGAW_MASK (0x3F << VTD_CAP_MGAW_SHIFT)
+
+static int
+spdk_get_iommu_width(void)
+{
+	DIR *dir;
+	FILE *file;
+	struct dirent *entry;
+	char mgaw_path[64];
+	char buf[64];
+	char *end;
+	long long int val;
+	int width, tmp;
+
+	dir = opendir("/sys/devices/virtual/iommu/");
+	if (dir == NULL) {
+		return -EINVAL;
+	}
+
+	width = 0;
+
+	while ((entry = readdir(dir)) != NULL) {
+		/* Find directories named "dmar0", "dmar1", etc */
+		if (strncmp(entry->d_name, "dmar", sizeof("dmar") - 1) != 0) {
+			continue;
+		}
+
+		tmp = snprintf(mgaw_path, sizeof(mgaw_path), "/sys/devices/virtual/iommu/%s/intel-iommu/cap",
+			       entry->d_name);
+		if ((unsigned)tmp >= sizeof(mgaw_path)) {
+			continue;
+		}
+
+		file = fopen(mgaw_path, "r");
+		if (file == NULL) {
+			continue;
+		}
+
+		if (fgets(buf, sizeof(buf), file) == NULL) {
+			fclose(file);
+			continue;
+		}
+
+		val = strtoll(buf, &end, 16);
+		if (val == LLONG_MIN || val == LLONG_MAX) {
+			fclose(file);
+			continue;
+		}
+
+		tmp = ((val & VTD_CAP_MGAW_MASK) >> VTD_CAP_MGAW_SHIFT) + 1;
+		if (width == 0 || tmp < width) {
+			width = tmp;
+		}
+
+		fclose(file);
+	}
+
+	closedir(dir);
+
+	return width;
+}
+
+#endif
 
 static int
 spdk_build_eal_cmdline(const struct spdk_env_opts *opts)
@@ -336,6 +406,39 @@ spdk_build_eal_cmdline(const struct spdk_env_opts *opts)
 	}
 
 #ifdef __linux__
+
+	/* When using vfio with enable_unsafe_noiommu_mode=Y, we need iova-mode=pa,
+	 * but DPDK guesses it should be iova-mode=va. Add a check and force
+	 * iova-mode=pa here. */
+	if (rte_vfio_noiommu_is_enabled()) {
+		args = spdk_push_arg(args, &argcount, _sprintf_alloc("--iova-mode=pa"));
+		if (args == NULL) {
+			return -1;
+		}
+	}
+
+#if defined(__x86_64__)
+	/* DPDK by default guesses that it should be using iova-mode=va so that it can
+	 * support running as an unprivileged user. However, some systems (especially
+	 * virtual machines) don't have an IOMMU capable of handling the full virtual
+	 * address space and DPDK doesn't currently catch that. Add a check in SPDK
+	 * and force iova-mode=pa here. */
+	if (spdk_get_iommu_width() < SPDK_IOMMU_VA_REQUIRED_WIDTH) {
+		args = spdk_push_arg(args, &argcount, _sprintf_alloc("--iova-mode=pa"));
+		if (args == NULL) {
+			return -1;
+		}
+	}
+#elif defined(__PPC64__)
+	/* On Linux + PowerPC, DPDK doesn't support VA mode at all. Unfortunately, it doesn't correctly
+	 * auto-detect at the moment, so we'll just force it here. */
+	args = spdk_push_arg(args, &argcount, _sprintf_alloc("--iova-mode=pa"));
+	if (args == NULL) {
+		return -1;
+	}
+#endif
+
+
 	/* Set the base virtual address - it must be an address that is not in the
 	 * ASAN shadow region, otherwise ASAN-enabled builds will ignore the
 	 * mmap hint.

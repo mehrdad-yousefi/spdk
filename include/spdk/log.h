@@ -160,7 +160,7 @@ void spdk_log(enum spdk_log_level level, const char *file, const int line, const
  * \param buf Buffer that holds the log information.
  * \param len Length of buffer to dump.
  */
-void spdk_log_dump(FILE *fp, const char *label, const void *buf, size_t len);
+void spdk_log_dump(FILE *fp, const char *label, const void *buf, size_t len, size_t base);
 
 /**
  * Check whether the log flag exists and is enabled.

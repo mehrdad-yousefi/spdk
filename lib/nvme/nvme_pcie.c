@@ -1350,7 +1350,34 @@ nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_trac
 			nvme_pcie_qpair_insert_pending_admin_request(qpair, req, cpl);
 		} else {
 			nvme_complete_request(tr->cb_fn, tr->cb_arg, qpair, req, cpl);
+
+			// pynvme: handle commands in nvme init process
+			if (nvme_qpair_is_admin_queue(qpair)) {
+				if (req->cmd.opc == SPDK_NVME_OPC_IDENTIFY) {
+					// check cns and nsid
+					if ((req->cmd.cdw10 & 0xff) == 1 && req->cmd.nsid == 0) {
+						struct spdk_nvme_ctrlr_data *cdata;
+
+						// identify controller
+						SPDK_DEBUGLOG(SPDK_LOG_NVME, "copy identify controller data\n");
+						cdata = &qpair->ctrlr->cdata;
+						memcpy(cdata, req->payload.contig_or_cb_arg, sizeof(*cdata));
+						spdk_nvme_ctrlr_identify_done(qpair->ctrlr, cpl);
+					}
+				} else if (req->cmd.opc == SPDK_NVME_OPC_GET_FEATURES) {
+					// check fid
+					if ((req->cmd.cdw10 & 0xff) == 7) {
+						spdk_nvme_ctrlr_get_num_queues_done(qpair->ctrlr, cpl);
+					}
+				}
+			}
 		}
+
+		//pynvme: unlock all LBA hold by this IO
+		// pnvme has only single thread in all process
+		//nvme_robust_mutex_lock(&qpair->ctrlr->ctrlr_lock);
+		crc32_unlock_lba(req);
+		//nvme_robust_mutex_unlock(&qpair->ctrlr->ctrlr_lock);
 
 		if (req_from_current_proc == true) {
 			nvme_qpair_free_request(qpair, req);
@@ -1990,6 +2017,18 @@ nvme_pcie_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_reques
 
 	if (tr == NULL) {
 		/* Inform the upper layer to try again later. */
+		rc = -EAGAIN;
+		goto exit;
+	}
+
+	// pynvme: try to lock LBAs to access, if fail, queue this request
+	// IPC lock is too expensive, so only lock among threads and
+	// only inter-ioworker rw-mix crc verify is supported
+	// pynvme has single thread in every process, so ctrlr_lock is not required
+	//nvme_robust_mutex_lock(&qpair->ctrlr->ctrlr_lock);
+	//nvme_robust_mutex_unlock(&qpair->ctrlr->ctrlr_lock);
+	if (crc32_lock_lba(req) == false) {
+		// try this IO later again
 		rc = -EAGAIN;
 		goto exit;
 	}

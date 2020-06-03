@@ -127,15 +127,6 @@ struct spdk_thread {
 	 */
 	TAILQ_HEAD(timer_pollers_head, spdk_poller)	timer_pollers;
 
-	/**
-	 * a queue dedicated for one single provider, SP/SC
-	 */
-	struct spdk_thread  *provider_sp;
-	struct spdk_ring		*messages_sp;
-
-	/**
-	 * usual message queue for all other provider, MP/SC
-	 */
 	struct spdk_ring		*messages;
 
 	SLIST_HEAD(, spdk_msg)		msg_cache;
@@ -250,7 +241,6 @@ _free_thread(struct spdk_thread *thread)
 
 	assert(thread->msg_cache_count == 0);
 
-	spdk_ring_free(thread->messages_sp);
 	spdk_ring_free(thread->messages);
 	free(thread);
 }
@@ -282,18 +272,9 @@ spdk_thread_create(const char *name, struct spdk_cpuset *cpumask)
 
 	thread->tsc_last = spdk_get_ticks();
 
-	thread->provider_sp = NULL;
-	thread->messages_sp = spdk_ring_create(SPDK_RING_TYPE_SP_SC, 65536, SPDK_ENV_SOCKET_ID_ANY);
-	if (!thread->messages_sp) {
-		SPDK_ERRLOG("Unable to allocate memory for message ring\n");
-		free(thread);
-		return NULL;
-	}
-
 	thread->messages = spdk_ring_create(SPDK_RING_TYPE_MP_SC, 65536, SPDK_ENV_SOCKET_ID_ANY);
 	if (!thread->messages) {
 		SPDK_ERRLOG("Unable to allocate memory for message ring\n");
-		spdk_ring_free(thread->messages_sp);
 		free(thread);
 		return NULL;
 	}
@@ -393,8 +374,7 @@ spdk_thread_get_from_ctx(void *ctx)
 }
 
 static inline uint32_t
-_spdk_msg_queue_run_batch(struct spdk_thread *thread, struct spdk_ring *msgs_ring,
-			  uint32_t max_msgs)
+_spdk_msg_queue_run_batch(struct spdk_thread *thread, uint32_t max_msgs)
 {
 	unsigned count, i;
 	void *messages[SPDK_MSG_BATCH_SIZE];
@@ -414,7 +394,7 @@ _spdk_msg_queue_run_batch(struct spdk_thread *thread, struct spdk_ring *msgs_rin
 		max_msgs = SPDK_MSG_BATCH_SIZE;
 	}
 
-	count = spdk_ring_dequeue(msgs_ring, messages, max_msgs);
+	count = spdk_ring_dequeue(thread->messages, messages, max_msgs);
 	if (count == 0) {
 		return 0;
 	}
@@ -479,8 +459,7 @@ spdk_thread_poll(struct spdk_thread *thread, uint32_t max_msgs, uint64_t now)
 		now = spdk_get_ticks();
 	}
 
-	msg_count = _spdk_msg_queue_run_batch(thread, thread->messages_sp, max_msgs);
-	msg_count += _spdk_msg_queue_run_batch(thread, thread->messages, max_msgs);
+	msg_count = _spdk_msg_queue_run_batch(thread, max_msgs);
 	if (msg_count) {
 		rc = 1;
 	}
@@ -611,8 +590,7 @@ spdk_thread_has_pollers(struct spdk_thread *thread)
 bool
 spdk_thread_is_idle(struct spdk_thread *thread)
 {
-	if (spdk_ring_count(thread->messages_sp) ||
-	    spdk_ring_count(thread->messages) ||
+	if (spdk_ring_count(thread->messages) ||
 	    spdk_thread_has_pollers(thread)) {
 		return false;
 	}
@@ -671,13 +649,11 @@ spdk_thread_get_stats(struct spdk_thread_stats *stats)
 }
 
 void
-spdk_thread_send_msg(struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
+spdk_thread_send_msg(const struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
 {
 	struct spdk_thread *local_thread;
 	struct spdk_msg *msg;
 	int rc;
-	bool send_sp_ring;
-	struct spdk_ring *msgs_ring;
 
 	if (!thread) {
 		assert(false);
@@ -687,24 +663,12 @@ spdk_thread_send_msg(struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
 	local_thread = _get_thread();
 
 	msg = NULL;
-	send_sp_ring = false;
 	if (local_thread != NULL) {
 		if (local_thread->msg_cache_count > 0) {
 			msg = SLIST_FIRST(&local_thread->msg_cache);
 			assert(msg != NULL);
 			SLIST_REMOVE_HEAD(&local_thread->msg_cache, link);
 			local_thread->msg_cache_count--;
-		}
-
-		/**
-		 * reserve SP/SC ring to the first thread sending msg
-		 */
-		if (thread->provider_sp == NULL) {
-			thread->provider_sp = local_thread;
-		}
-
-		if (thread->provider_sp == local_thread) {
-			send_sp_ring = true;
 		}
 	}
 
@@ -719,16 +683,7 @@ spdk_thread_send_msg(struct spdk_thread *thread, spdk_msg_fn fn, void *ctx)
 	msg->fn = fn;
 	msg->arg = ctx;
 
-	/**
-	 * send msg to SP/SC ring if possible
-	 */
-	if (send_sp_ring) {
-		msgs_ring = thread->messages_sp;
-	} else {
-		msgs_ring = thread->messages;
-	}
-
-	rc = spdk_ring_enqueue(msgs_ring, (void **)&msg, 1, NULL);
+	rc = spdk_ring_enqueue(thread->messages, (void **)&msg, 1, NULL);
 	if (rc != 1) {
 		assert(false);
 		spdk_mempool_put(g_spdk_msg_mempool, msg);

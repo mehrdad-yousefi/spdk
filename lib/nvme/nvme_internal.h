@@ -449,7 +449,7 @@ struct spdk_nvme_ns {
 	uint8_t				id_desc_list[4096];
 
 	// pynvme: crc table
-	uint32_t *crc_table;
+	void *crc_table;
 	uint64_t table_size;
 };
 
@@ -666,10 +666,10 @@ struct msix_ctrl {
 struct spdk_nvme_ctrlr {
 	/* Hot data (accessed in I/O path) starts here. */
 
+	intr_ctrl_t *pynvme_intc_ctrl;  // for pynvme
+
 	/** Array of namespaces indexed by nsid - 1 */
 	struct spdk_nvme_ns		*ns;
-
-	struct spdk_nvme_transport_id	trid;
 
 	uint32_t			num_ns;
 
@@ -689,6 +689,8 @@ struct spdk_nvme_ctrlr {
 
 	/** Controller support flags */
 	uint64_t			flags;
+
+	struct spdk_nvme_transport_id	trid;
 
 	/* Cold data (not accessed in normal I/O path) is after this point. */
 
@@ -775,8 +777,6 @@ struct spdk_nvme_ctrlr {
 	struct spdk_ring		*external_io_msgs;
 
 	STAILQ_HEAD(, nvme_io_msg_producer) io_producers;
-
-	intr_ctrl_t *pynvme_intc_ctrl;  // for pynvme
 };
 
 struct spdk_nvme_probe_ctx {
@@ -1222,10 +1222,15 @@ _is_page_aligned(uint64_t address, uint64_t page_size)
 }
 
 // spdk new API provided to pynvme
+extern int spdk_nvme_ctrlr_construct_namespaces(struct spdk_nvme_ctrlr *ctrlr);
+extern void spdk_nvme_ctrlr_get_num_queues_done(void *arg, struct spdk_nvme_cpl *cpl);
+extern void spdk_nvme_ctrlr_identify_done(void *arg, const struct spdk_nvme_cpl *cpl);
 extern uint32_t spdk_nvme_io_qpair_count(struct spdk_nvme_ctrlr *ctrlr);
 extern uint32_t nvme_pcie_qpair_outstanding_count(struct spdk_nvme_qpair *qpair);
 extern void nvme_pcie_bar_remap_recover(struct spdk_nvme_ctrlr *ctrlr);
 extern int nvme_pcie_bar_remap(struct spdk_nvme_ctrlr *ctrlr);
 extern const char *nvme_qpair_get_status_string(struct spdk_nvme_cpl *cpl);
+extern bool crc32_lock_lba(struct nvme_request *req);
+extern void crc32_unlock_lba(struct nvme_request *req);
 
 #endif /* __NVME_INTERNAL_H__ */

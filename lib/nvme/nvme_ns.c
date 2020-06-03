@@ -332,6 +332,8 @@ int nvme_ns_construct(struct spdk_nvme_ns *ns, uint32_t id,
 	int	rc;
 
 	assert(id > 0);
+	assert(ns != NULL);
+	assert(ctrlr != NULL);
 
 	ns->ctrlr = ctrlr;
 	ns->id = id;

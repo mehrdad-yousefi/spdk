@@ -177,7 +177,7 @@ spdk_log(enum spdk_log_level level, const char *file, const int line, const char
 }
 
 static void
-fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
+fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len, size_t base)
 {
 	char tmpbuf[MAX_TMPBUF];
 	char buf16[16 + 1];
@@ -197,7 +197,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 		}
 		if (idx % 16 == 0) {
 			total += snprintf(tmpbuf + total, sizeof tmpbuf - total,
-					  "%08x ", idx);
+					  "[0x%08x] ", (unsigned int)base + idx);
 		}
 		if (idx % 8 == 0) {
 			total += snprintf(tmpbuf + total, sizeof tmpbuf - total,
@@ -208,7 +208,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 		buf16[idx % 16] = isprint(buf[idx]) ? buf[idx] : '.';
 	}
 	for (; idx % 16 != 0; idx++) {
-		if (idx == 8) {
+		if (idx % 8 == 0) {
 			total += snprintf(tmpbuf + total, sizeof tmpbuf - total,
 					  " ");
 		}
@@ -222,7 +222,7 @@ fdump(FILE *fp, const char *label, const uint8_t *buf, size_t len)
 }
 
 void
-spdk_log_dump(FILE *fp, const char *label, const void *buf, size_t len)
+spdk_log_dump(FILE *fp, const char *label, const void *buf, size_t len, size_t base)
 {
-	fdump(fp, label, buf, len);
+	fdump(fp, label, buf, len, base);
 }

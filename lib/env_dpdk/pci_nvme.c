@@ -37,7 +37,8 @@
 
 static struct rte_pci_id nvme_pci_driver_id[] = {
 	{
-		.class_id = SPDK_PCI_CLASS_NVME,
+		// pynvme: load a non-nvme device
+		.class_id = RTE_CLASS_ANY_ID, //SPDK_PCI_CLASS_NVME,
 		.vendor_id = PCI_ANY_ID,
 		.device_id = PCI_ANY_ID,
 		.subsystem_vendor_id = PCI_ANY_ID,
@@ -56,7 +57,7 @@ static struct spdk_pci_driver g_nvme_pci_drv = {
 		.id_table	= nvme_pci_driver_id,
 		.probe		= spdk_pci_device_init,
 		.remove		= spdk_pci_device_fini,
-		.driver.name	= "spdk_nvme",
+		.driver.name	= "pynvme_core",
 	},
 
 	.cb_fn = NULL,

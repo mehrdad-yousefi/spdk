@@ -827,7 +827,8 @@ nvme_ctrlr_disable(struct spdk_nvme_ctrlr *ctrlr)
 	union spdk_nvme_cc_register	cc;
 
 	if (nvme_ctrlr_get_cc(ctrlr, &cc)) {
-		SPDK_ERRLOG("get_cc() failed\n");
+		// pynvme: device is offline when detach
+		SPDK_DEBUGLOG(SPDK_LOG_NVME, "get_cc() failed\n");
 		return -EIO;
 	}
 
@@ -1234,6 +1235,14 @@ nvme_ctrlr_identify_done(void *arg, const struct spdk_nvme_cpl *cpl)
 			     ctrlr->opts.admin_timeout_ms);
 }
 
+void spdk_nvme_ctrlr_identify_done(void *arg, const struct spdk_nvme_cpl *cpl)
+{
+	struct spdk_nvme_ctrlr *ctrlr = (struct spdk_nvme_ctrlr *)arg;
+
+	nvme_ctrlr_identify_done(arg, cpl);
+	nvme_ctrlr_set_state(ctrlr, NVME_CTRLR_STATE_READY, NVME_TIMEOUT_INFINITE);
+}
+
 static int
 nvme_ctrlr_identify(struct spdk_nvme_ctrlr *ctrlr)
 {
@@ -1561,6 +1570,14 @@ nvme_ctrlr_get_num_queues_done(void *arg, const struct spdk_nvme_cpl *cpl)
 			     ctrlr->opts.admin_timeout_ms);
 }
 
+void spdk_nvme_ctrlr_get_num_queues_done(void *arg, struct spdk_nvme_cpl *cpl)
+{
+	struct spdk_nvme_ctrlr *ctrlr = (struct spdk_nvme_ctrlr *)arg;
+
+	nvme_ctrlr_get_num_queues_done(arg, cpl);
+	nvme_ctrlr_set_state(ctrlr, NVME_CTRLR_STATE_READY, NVME_TIMEOUT_INFINITE);
+}
+
 static int
 nvme_ctrlr_get_num_queues(struct spdk_nvme_ctrlr *ctrlr)
 {
@@ -1775,6 +1792,9 @@ nvme_ctrlr_construct_namespaces(struct spdk_nvme_ctrlr *ctrlr)
 	/* ctrlr->num_ns may be 0 (startup) or a different number of namespaces (reset),
 	 * so check if we need to reallocate.
 	 */
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "alloc ns, nn %d, num_ns %d, ns %p\n",
+		      nn, ctrlr->num_ns, ctrlr->ns);
+
 	if (nn != ctrlr->num_ns) {
 		nvme_ctrlr_destruct_namespaces(ctrlr);
 
@@ -1804,8 +1824,14 @@ nvme_ctrlr_construct_namespaces(struct spdk_nvme_ctrlr *ctrlr)
 	return 0;
 
 fail:
+	SPDK_ERRLOG("construct namespace error: %d\n", rc);
 	nvme_ctrlr_destruct_namespaces(ctrlr);
 	return rc;
+}
+
+int spdk_nvme_ctrlr_construct_namespaces(struct spdk_nvme_ctrlr *ctrlr)
+{
+	return nvme_ctrlr_construct_namespaces(ctrlr);
 }
 
 static void
@@ -2094,6 +2120,10 @@ nvme_ctrlr_free_processes(struct spdk_nvme_ctrlr *ctrlr)
 	/* Free all the processes' properties and make sure no pending admin IOs */
 	TAILQ_FOREACH_SAFE(active_proc, &ctrlr->active_procs, tailq, tmp) {
 		TAILQ_REMOVE(&ctrlr->active_procs, active_proc, tailq);
+
+		// pynvme: dirty shutdown
+		//assert(STAILQ_EMPTY(&active_proc->active_reqs));
+
 		spdk_free(active_proc);
 	}
 }
@@ -2251,19 +2281,23 @@ nvme_ctrlr_process_init(struct spdk_nvme_ctrlr *ctrlr)
 	 */
 	switch (ctrlr->state) {
 	case NVME_CTRLR_STATE_INIT_DELAY:
-		nvme_ctrlr_set_state(ctrlr, NVME_CTRLR_STATE_INIT, ready_timeout_in_ms);
-		if (ctrlr->quirks & NVME_QUIRK_DELAY_BEFORE_INIT) {
-			/*
-			 * Controller may need some delay before it's enabled.
-			 *
-			 * This is a workaround for an issue where the PCIe-attached NVMe controller
-			 * is not ready after VFIO reset. We delay the initialization rather than the
-			 * enabling itself, because this is required only for the very first enabling
-			 * - directly after a VFIO reset.
-			 */
-			SPDK_DEBUGLOG(SPDK_LOG_NVME, "Adding 2 second delay before initializing the controller\n");
-			ctrlr->sleep_timeout_tsc = spdk_get_ticks() + (2000 * spdk_get_ticks_hz() / 1000);
-		}
+		// pynvme: skip nvme init process in spdk
+		nvme_ctrlr_set_state(ctrlr, NVME_CTRLR_STATE_READY, NVME_TIMEOUT_INFINITE);
+
+		//nvme_ctrlr_set_state(ctrlr, NVME_CTRLR_STATE_INIT, ready_timeout_in_ms);
+		/*
+		 * Controller may need some delay before it's enabled.
+		 *
+		 * This is a workaround for an issue where the PCIe-attached NVMe controller
+		 * is not ready after VFIO reset. We delay the initialization rather than the
+		 * enabling itself, because this is required only for the very first enabling
+		 * - directly after a VFIO reset.
+		 *
+		 * TODO: Figure out what is actually going wrong.
+		 */
+
+		// pynvme: removes the delay to catch the potential device issues
+		//ctrlr->sleep_timeout_tsc = spdk_get_ticks(); // + (2 * spdk_get_ticks_hz() / 1000);
 		break;
 
 	case NVME_CTRLR_STATE_INIT:
@@ -2663,7 +2697,7 @@ spdk_nvme_ctrlr_process_admin_completions(struct spdk_nvme_ctrlr *ctrlr)
 	}
 	num_completions = rc;
 
-	rc = spdk_nvme_qpair_process_completions(ctrlr->adminq, 0);
+	rc = spdk_nvme_qpair_process_completions(ctrlr->adminq, 1);
 	nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 
 	if (rc < 0) {
