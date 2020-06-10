@@ -6,7 +6,7 @@
 	url = https://github.com/spdk/isa-l.git
 [submodule "dpdk"]
 	path = dpdk
-	url = https://github.com/cranechu/dpdk
+	url = https://gitee.com/pynvme/dpdk
 [submodule "ocf"]
 	path = ocf
 	url = https://github.com/Open-CAS/ocf.git
