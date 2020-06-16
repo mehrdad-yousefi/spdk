@@ -1030,6 +1030,7 @@ nvme_pcie_qpair_construct(struct spdk_nvme_qpair *qpair,
 	pqpair->max_completions_cap = pqpair->num_entries / 4;
 	pqpair->max_completions_cap = spdk_max(pqpair->max_completions_cap, NVME_MIN_COMPLETIONS);
 	pqpair->max_completions_cap = spdk_min(pqpair->max_completions_cap, NVME_MAX_COMPLETIONS);
+	pqpair->max_completions_cap = 1;  // pynvme: scripts can use the whole queue
 	num_trackers = pqpair->num_entries - pqpair->max_completions_cap;
 
 	SPDK_DEBUGLOG(SPDK_LOG_NVME, "max_completions_cap = %" PRIu16 " num_trackers = %" PRIu16 "\n",
@@ -2017,7 +2018,8 @@ nvme_pcie_qpair_submit_request(struct spdk_nvme_qpair *qpair, struct nvme_reques
 
 	if (tr == NULL) {
 		/* Inform the upper layer to try again later. */
-		rc = -EAGAIN;
+		SPDK_ERRLOG("no free tracker\n");
+		rc = -EINVAL;
 		goto exit;
 	}
 
