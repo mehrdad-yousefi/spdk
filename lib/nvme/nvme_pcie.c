@@ -1777,11 +1777,13 @@ nvme_pcie_prp_list_append(struct nvme_tracker *tr, uint32_t *prp_index, void *vi
 	SPDK_DEBUGLOG(SPDK_LOG_NVME, "prp_index:%u virt_addr:%p len:%u\n",
 		      *prp_index, virt_addr, (uint32_t)len);
 
+#if 0 // pynvme: ignore this error in host  
 	if (spdk_unlikely(((uintptr_t)virt_addr & 3) != 0)) {
 		SPDK_ERRLOG("virt_addr %p not dword aligned\n", virt_addr);
 		return -EINVAL;
 	}
-
+#endif
+  
 	i = *prp_index;
 	while (len) {
 		uint32_t seg_len;
