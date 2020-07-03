@@ -52,7 +52,8 @@
 #define SPDK_VFIO_ENABLED 0
 #else
 #include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)
+// pynvme does not use vfio
+#if 0 //LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0)
 #define SPDK_VFIO_ENABLED 1
 #include <linux/vfio.h>
 #include <rte_vfio.h>
