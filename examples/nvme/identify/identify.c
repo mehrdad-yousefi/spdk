@@ -1827,3 +1827,5 @@ void cmdlog_init(struct spdk_nvme_qpair *q) {}
 void cmdlog_add_cmd(struct spdk_nvme_qpair *qpair, struct nvme_request *req) {}
 void cmdlog_cmd_cpl(struct nvme_request *req, struct spdk_nvme_cpl *cpl) {}
 void cmdlog_free(struct spdk_nvme_qpair *q) {}
+void crc32_unlock_lba(struct nvme_request* req) {}
+bool crc32_lock_lba(struct nvme_request* req) {return true;}
