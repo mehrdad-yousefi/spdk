@@ -1352,24 +1352,18 @@ nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_trac
 		} else {
 			nvme_complete_request(tr->cb_fn, tr->cb_arg, qpair, req, cpl);
 
-			// pynvme: handle commands in nvme init process
-			if (nvme_qpair_is_admin_queue(qpair)) {
-				if (req->cmd.opc == SPDK_NVME_OPC_IDENTIFY) {
-					// check cns and nsid
-					if ((req->cmd.cdw10 & 0xff) == 1 && req->cmd.nsid == 0) {
-						struct spdk_nvme_ctrlr_data *cdata;
+			// pynvme: handle admin commands in nvme init process
+			if (nvme_qpair_is_admin_queue(qpair) &&
+			    req->cmd.opc == SPDK_NVME_OPC_IDENTIFY) {
+				// check cns and nsid
+				if ((req->cmd.cdw10 & 0xff) == 1 && req->cmd.nsid == 0) {
+					struct spdk_nvme_ctrlr_data *cdata;
 
-						// identify controller
-						SPDK_DEBUGLOG(SPDK_LOG_NVME, "copy identify controller data\n");
-						cdata = &qpair->ctrlr->cdata;
-						memcpy(cdata, req->payload.contig_or_cb_arg, sizeof(*cdata));
-						spdk_nvme_ctrlr_identify_done(qpair->ctrlr, cpl);
-					}
-				} else if (req->cmd.opc == SPDK_NVME_OPC_GET_FEATURES) {
-					// check fid
-					if ((req->cmd.cdw10 & 0xff) == 7) {
-						spdk_nvme_ctrlr_get_num_queues_done(qpair->ctrlr, cpl);
-					}
+					// identify controller
+					SPDK_DEBUGLOG(SPDK_LOG_NVME, "copy identify controller data\n");
+					cdata = &qpair->ctrlr->cdata;
+					memcpy(cdata, req->payload.contig_or_cb_arg, sizeof(*cdata));
+					spdk_nvme_ctrlr_identify_done(qpair->ctrlr, cpl);
 				}
 			}
 		}
@@ -1783,7 +1777,7 @@ nvme_pcie_prp_list_append(struct nvme_tracker *tr, uint32_t *prp_index, void *vi
 		return -EINVAL;
 	}
 #endif
-  
+
 	i = *prp_index;
 	while (len) {
 		uint32_t seg_len;
