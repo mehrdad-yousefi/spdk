@@ -245,6 +245,7 @@ nvme_sigbus_fault_sighandler(int signum, siginfo_t *info, void *ctx)
 		g_thread_mmio_ctrlr->is_remapped = true;
 	}
 	__atomic_store_n(&g_signal_lock, 0, __ATOMIC_RELEASE);
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "bar: %p\n", g_thread_mmio_ctrlr->regs);
 }
 
 static void
@@ -670,6 +671,7 @@ nvme_pcie_ctrlr_allocate_bars(struct nvme_pcie_ctrlr *pctrlr)
 	pctrlr->regs_size = size;
 	nvme_pcie_ctrlr_map_cmb(pctrlr);
 
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "bar: %p\n", pctrlr->regs);
 	return 0;
 }
 
@@ -2261,7 +2263,9 @@ void nvme_pcie_bar_remap_recover(struct spdk_nvme_ctrlr *ctrlr)
 {
 	struct nvme_pcie_ctrlr *pctrlr = nvme_pcie_ctrlr(ctrlr);
 
+	munmap((void *)pctrlr->regs, pctrlr->regs_size);
 	pctrlr->regs = pctrlr->regs_bak;
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "bar: %p\n", pctrlr->regs);
 }
 
 
@@ -2283,6 +2287,7 @@ int nvme_pcie_bar_remap(struct spdk_nvme_ctrlr *ctrlr)
 	memset(map_address, 0xFF, sizeof(struct spdk_nvme_registers));
 	pctrlr->regs_bak = pctrlr->regs;
 	pctrlr->regs = (volatile struct spdk_nvme_registers *)map_address;
+	SPDK_DEBUGLOG(SPDK_LOG_NVME, "bar: %p\n", pctrlr->regs);
 	return 0;
 }
 
