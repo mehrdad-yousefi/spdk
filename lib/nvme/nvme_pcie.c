@@ -1187,13 +1187,14 @@ nvme_pcie_qpair_insert_pending_admin_request(struct spdk_nvme_qpair *qpair,
 /**
  * Note: the ctrlr_lock must be held when calling this function.
  */
-static void
+static uint32_t
 nvme_pcie_qpair_complete_pending_admin_request(struct spdk_nvme_qpair *qpair)
 {
 	struct spdk_nvme_ctrlr		*ctrlr = qpair->ctrlr;
 	struct nvme_request		*req, *tmp_req;
 	pid_t				pid = getpid();
 	struct spdk_nvme_ctrlr_process	*proc;
+	uint32_t num = 0;
 
 	/*
 	 * Check whether there is any pending admin request from
@@ -1205,7 +1206,7 @@ nvme_pcie_qpair_complete_pending_admin_request(struct spdk_nvme_qpair *qpair)
 	if (!proc) {
 		SPDK_ERRLOG("the active process (pid %d) is not found for this controller.\n", pid);
 		assert(proc);
-		return;
+		return 0;
 	}
 
 	STAILQ_FOREACH_SAFE(req, &proc->active_reqs, stailq, tmp_req) {
@@ -1213,9 +1214,15 @@ nvme_pcie_qpair_complete_pending_admin_request(struct spdk_nvme_qpair *qpair)
 
 		assert(req->pid == pid);
 
+		// count the pended commands
+		SPDK_NOTICELOG("get a pending admin request from other process!\n");
+		num ++;
+
 		nvme_complete_request(req->cb_fn, req->cb_arg, qpair, req, &req->cpl);
 		nvme_free_request(req);
 	}
+
+	return num;
 }
 
 static inline int
@@ -1319,7 +1326,8 @@ nvme_pcie_qpair_submit_tracker(struct spdk_nvme_qpair *qpair, struct nvme_tracke
 	}
 }
 
-static void
+//pynvme: return true if request is pended
+static bool
 nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_tracker *tr,
 				 struct spdk_nvme_cpl *cpl, bool print_on_error)
 {
@@ -1385,6 +1393,8 @@ nvme_pcie_qpair_complete_tracker(struct spdk_nvme_qpair *qpair, struct nvme_trac
 		TAILQ_REMOVE(&pqpair->outstanding_tr, tr, tq_list);
 		TAILQ_INSERT_HEAD(&pqpair->free_tr, tr, tq_list);
 	}
+
+	return !req_from_current_proc;
 }
 
 static void
@@ -2168,6 +2178,8 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 	}
 
 	while (1) {
+		bool pended = false;
+
 		cpl = &pqpair->cpl[pqpair->cq_head];
 
 		if (!next_is_valid && cpl->status.p != pqpair->flags.phase) {
@@ -2211,14 +2223,20 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 		pqpair->sq_head = cpl->sqhd;
 
 		if (tr->req) {
-			nvme_pcie_qpair_complete_tracker(qpair, tr, cpl, true);
+			pended = nvme_pcie_qpair_complete_tracker(qpair, tr, cpl, true);
 		} else {
 			SPDK_ERRLOG("cpl does not map to outstanding cmd\n");
 			spdk_nvme_qpair_print_completion(qpair, cpl);
 			assert(0);
 		}
 
-		if (++num_completions == max_completions) {
+		// pynvme: do not report pended commands
+		num_completions ++;
+		if (pended) {
+			num_completions --;
+		}
+
+		if (num_completions == max_completions) {
 			break;
 		}
 	}
@@ -2236,7 +2254,10 @@ nvme_pcie_qpair_process_completions(struct spdk_nvme_qpair *qpair, uint32_t max_
 
 	/* Before returning, complete any pending admin request. */
 	if (spdk_unlikely(nvme_qpair_is_admin_queue(qpair))) {
-		nvme_pcie_qpair_complete_pending_admin_request(qpair);
+		uint32_t num;
+
+		num = nvme_pcie_qpair_complete_pending_admin_request(qpair);
+		num_completions += num;
 
 		nvme_robust_mutex_unlock(&ctrlr->ctrlr_lock);
 	}
