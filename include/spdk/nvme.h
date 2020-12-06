@@ -1026,6 +1026,10 @@ struct spdk_nvme_io_qpair_opts {
 	 * This only applies to local PCIe devices. */
 	bool delay_pcie_doorbell;
 
+	//pynvme: interrupt enable and vector
+	bool          intr_enable;
+	uint16_t      intr_vector;
+
 	/**
 	 * These fields allow specifying the memory buffers for the submission and/or
 	 * completion queues.

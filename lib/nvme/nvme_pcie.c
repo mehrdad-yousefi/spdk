@@ -1020,6 +1020,14 @@ nvme_pcie_qpair_construct(struct spdk_nvme_qpair *qpair,
 		pqpair->cq_vaddr = opts->cq.vaddr;
 		sq_paddr = opts->sq.paddr;
 		cq_paddr = opts->cq.paddr;
+
+		// pynvme: set interrupt
+		uint16_t vector = opts->intr_vector;
+		if (vector == 0xffff) {
+			vector = qpair->id;
+		}
+		qpair->intr_vector = vector;
+		qpair->intr_enable = opts->intr_enable;
 	}
 
 	pqpair->retry_count = ctrlr->opts.transport_retry_count;
@@ -1525,7 +1533,11 @@ nvme_pcie_ctrlr_cmd_create_io_cq(struct spdk_nvme_ctrlr *ctrlr,
 	 * 0x1 = physically contiguous
 	 */
 	// pynvme: enables msix
-	cmd->cdw11 = (0x3 | (intc_get_cmd_vec_info(io_que) << 16));
+	cmd->cdw11 = 0x1;
+	if (io_que->intr_enable) {
+		cmd->cdw11 = 0x3;
+	}
+	cmd->cdw11 |= (intc_get_cmd_vec_info(io_que) << 16);
 	cmd->dptr.prp.prp1 = pqpair->cpl_bus_addr;
 
 	return nvme_ctrlr_submit_admin_request(ctrlr, req);

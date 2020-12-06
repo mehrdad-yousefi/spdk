@@ -425,6 +425,8 @@ struct spdk_nvme_qpair {
 	void *pynvme_cmdlog;  // for pynvme
 	uint64_t pynvme_io_in_second;
 	uint64_t pynvme_lba_in_second;
+	uint16_t      intr_vector;
+	bool          intr_enable;
 };
 
 struct spdk_nvme_ns {
