@@ -3216,7 +3216,8 @@ spdk_nvme_io_qpair_count(struct spdk_nvme_ctrlr *ctrlr)
 bool
 spdk_nvme_secondary_process_nonexist(struct spdk_nvme_ctrlr *ctrlr)
 {
-	struct spdk_nvme_ctrlr_process *e = TAILQ_FIRST(&ctrlr->active_procs);
-	assert(e->is_primary);
-	return NULL == TAILQ_NEXT(e, tailq);
+  int ref = nvme_ctrlr_get_ref_count(ctrlr);
+
+  assert(ref > 0);
+  return ref == 1;
 }
