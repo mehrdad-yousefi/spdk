@@ -3216,8 +3216,8 @@ spdk_nvme_io_qpair_count(struct spdk_nvme_ctrlr *ctrlr)
 bool
 spdk_nvme_secondary_process_nonexist(struct spdk_nvme_ctrlr *ctrlr)
 {
-  int ref = nvme_ctrlr_get_ref_count(ctrlr);
+	int ref = nvme_ctrlr_get_ref_count(ctrlr);
 
-  assert(ref > 0);
-  return ref == 1;
+	assert(ref > 0);
+	return ref == 1;
 }
