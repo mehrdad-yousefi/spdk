@@ -101,7 +101,7 @@ elif [ -f /etc/debian_version ]; then
 	apt-get install -y python3-paramiko
 elif [ -f /etc/SuSE-release ] || [ -f /etc/SUSE-brand ]; then
 	zypper install -y gcc gcc-c++ make cunit-devel libaio-devel libopenssl-devel \
-		git-core lcov python-base python-pycodestyle libuuid-devel sg3_utils pciutils \
+		git-core lcov python-base python3-pycodestyle libuuid-devel sg3_utils pciutils \
 		ShellCheck
 	# Additional (optional) dependencies for showing backtrace in logs
 	zypper install libunwind-devel || true
