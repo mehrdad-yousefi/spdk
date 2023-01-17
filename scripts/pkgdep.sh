@@ -55,7 +55,7 @@ if [ -s /etc/redhat-release ]; then
 	fi
 
 	yum install -y gcc gcc-c++ make CUnit-devel libaio-devel openssl-devel \
-		git astyle python-pycodestyle lcov python libuuid-devel \
+		git astyle python3-pycodestyle lcov python3.6 libuuid-devel \
 		sg3_utils libiscsi-devel pciutils ShellCheck
 	# Additional (optional) dependencies for showing backtrace in logs
 	yum install -y libunwind-devel || true
